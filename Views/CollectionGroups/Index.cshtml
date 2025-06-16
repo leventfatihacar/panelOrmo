@@ -1,0 +1,72 @@
+﻿@model List<panelOrmo.Models.CollectionGroup>
+@{
+    ViewData["Title"] = "Collection Groups Management";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Collection Groups (Koleksiyon Grupları)</h2>
+    <a href="/CollectionGroups/Create" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Add New Group
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Parent Collection</th>
+                        <th>Language</th>
+                        <th>Status</th>
+                        <th>Created Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var group in Model)
+                    {
+                        <tr>
+                            <td>@group.DID</td>
+                            <td>@group.DName</td>
+                            <td>@group.DParentID</td>
+                            <td>
+                                @if (group.DLanguageID == 1)
+                                {
+                                    <span class="badge bg-primary">Turkish</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">English</span>
+                                }
+                            </td>
+                            <td>
+                                @if (group.DIsValid)
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Inactive</span>
+                                }
+                            </td>
+                            <td>@group.DCreatedDate.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="/CollectionGroups/Edit/@group.DID" class="btn btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button class="btn btn-outline-danger" onclick="toggleGroupStatus(@group.DID, @group.DIsValid.ToString().ToLower())">
+                                        <i class="fas fa-toggle-@(group.DIsValid ? "on" : "off")"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,80 @@
+﻿@model panelOrmo.Models.CollectionProductViewModel
+@{
+    ViewData["Title"] = "Create Collection Product";
+    var collectionGroups = ViewBag.CollectionGroups as List<panelOrmo.Models.CollectionGroup>;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Create Collection Product</h2>
+    <a href="/CollectionProducts" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to List
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form asp-action="Create" method="post" enctype="multipart/form-data">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="mb-3">
+                        <label asp-for="ProductCode" class="form-label">Product Code *</label>
+                        <input asp-for="ProductCode" class="form-control" placeholder="Enter product code" />
+                        <span asp-validation-for="ProductCode" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="CollectionGroupID" class="form-label">Collection Group *</label>
+                        <select asp-for="CollectionGroupID" class="form-select">
+                            <option value="">Select Collection Group</option>
+                            @if (collectionGroups != null)
+                            {
+                                @foreach (var group in collectionGroups)
+                                {
+                                    <option value="@group.DID">@group.DName</option>
+                                }
+                            }
+                        </select>
+                        <span asp-validation-for="CollectionGroupID" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Content" class="form-label">Product Content *</label>
+                        <textarea asp-for="Content" class="form-control" rows="5" placeholder="Enter product details and ingredients"></textarea>
+                        <span asp-validation-for="Content" class="text-danger"></span>
+                        <div class="form-text">Content will be automatically wrapped in &lt;p&gt; tags</div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label asp-for="SmallImage" class="form-label">Small Image</label>
+                        <input asp-for="SmallImage" type="file" class="form-control" accept="image/jpeg" />
+                        <div class="form-text">Small product image (.jpg only)</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="MediumImage" class="form-label">Medium Image</label>
+                        <input asp-for="MediumImage" type="file" class="form-control" accept="image/jpeg" />
+                        <div class="form-text">Medium product image (.jpg only)</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input asp-for="IsActive" class="form-check-input" type="checkbox" checked />
+                            <label asp-for="IsActive" class="form-check-label">
+                                Active
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>Create Product
+                </button>
+                <a href="/CollectionProducts" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>

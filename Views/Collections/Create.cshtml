@@ -1,0 +1,72 @@
+﻿@model panelOrmo.Models.CollectionViewModel
+@{
+    ViewData["Title"] = "Create Collection";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Create Collection</h2>
+    <a href="/Collections" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to List
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form asp-action="Create" method="post" enctype="multipart/form-data">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="mb-3">
+                        <label asp-for="Name" class="form-label">Collection Name *</label>
+                        <input asp-for="Name" class="form-control" placeholder="Enter collection name" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Summary" class="form-label">Summary (Year)</label>
+                        <input asp-for="Summary" class="form-control" placeholder="e.g., 2025" />
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label asp-for="LanguageID" class="form-label">Language *</label>
+                        <select asp-for="LanguageID" class="form-select">
+                            <option value="">Select Language</option>
+                            <option value="1">Turkish</option>
+                            <option value="2">English</option>
+                        </select>
+                        <span asp-validation-for="LanguageID" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Image" class="form-label">Collection Image</label>
+                        <input asp-for="Image" type="file" class="form-control" accept="image/jpeg" />
+                        <div class="form-text">Only .jpg files are allowed</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="StartDate" class="form-label">Start Date</label>
+                        <input asp-for="StartDate" type="datetime-local" class="form-control" />
+                        <div class="form-text">Leave empty for current date/time</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input asp-for="IsActive" class="form-check-input" type="checkbox" checked />
+                            <label asp-for="IsActive" class="form-check-label">
+                                Active
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>Create Collection
+                </button>
+                <a href="/Collections" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>

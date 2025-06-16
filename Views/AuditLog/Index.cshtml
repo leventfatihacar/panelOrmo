@@ -1,0 +1,72 @@
+﻿@model List<panelOrmo.Models.AuditLog>
+@{
+    ViewData["Title"] = "Audit Log";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Audit Log</h2>
+    <button class="btn btn-outline-primary" onclick="refreshLog()">
+        <i class="fas fa-refresh me-2"></i>Refresh
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-sm">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Table</th>
+                        <th>Record ID</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model)
+                    {
+                        <tr>
+                            <td>@log.Id</td>
+                            <td>@log.Username</td>
+                            <td>
+                                <span class="badge bg-@(GetActionBadgeColor(log.Action))">
+                                    @log.Action
+                                </span>
+                            </td>
+                            <td>@log.TableName</td>
+                            <td>@(log.RecordId?.ToString() ?? "-")</td>
+                            <td>@log.CreatedDate.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@functions {
+    string GetActionBadgeColor(string action)
+    {
+        return action.ToLower() switch
+        {
+            "login" => "success",
+            "create" => "primary",
+            "create news" => "primary",
+            "create collection" => "primary",
+            "create collection group" => "primary",
+            "create collection product" => "primary",
+            "create user" => "primary",
+            "toggle" => "warning",
+            "change" => "info",
+            _ => "secondary"
+        };
+    }
+}
+
+<script>
+    function refreshLog() {
+        location.reload();
+    }
+</script>

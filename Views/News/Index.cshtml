@@ -1,0 +1,93 @@
+﻿@model List<panelOrmo.Models.News>
+@{
+    ViewData["Title"] = "News Management";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>News (Haberler)</h2>
+    <a href="/News/Create" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Add New Article
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th>Language</th>
+                        <th>Status</th>
+                        <th>Created Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var news in Model)
+                    {
+                        <tr>
+                            <td>@news.CID</td>
+                            <td>@news.CTitle</td>
+                            <td>
+                                @if (news.CLanguageID == 1)
+                                {
+                                    <span class="badge bg-primary">Turkish</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">English</span>
+                                }
+                            </td>
+                            <td>
+                                @if (news.CIsValid)
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Inactive</span>
+                                }
+                            </td>
+                            <td>@news.CCreatedDate.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="/News/Edit/@news.CID" class="btn btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button class="btn btn-outline-danger" onclick="toggleStatus(@news.CID, @news.CIsValid.ToString().ToLower())">
+                                        <i class="fas fa-toggle-@(news.CIsValid ? "on" : "off")"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleStatus(id, currentStatus) {
+        if (confirm('Are you sure you want to change the status of this news article?')) {
+            // AJAX call to toggle status
+            fetch('/News/ToggleStatus', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id: id, status: !currentStatus })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error updating status');
+                }
+            });
+        }
+    }
+</script>

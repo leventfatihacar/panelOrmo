@@ -1,0 +1,72 @@
+﻿@model List<panelOrmo.Models.Collection>
+@{
+    ViewData["Title"] = "Collections Management";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Collections (Koleksiyonlar)</h2>
+    <a href="/Collections/Create" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Add New Collection
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Summary</th>
+                        <th>Language</th>
+                        <th>Status</th>
+                        <th>Created Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var collection in Model)
+                    {
+                        <tr>
+                            <td>@collection.BID</td>
+                            <td>@collection.BName</td>
+                            <td>@collection.BSummary</td>
+                            <td>
+                                @if (collection.BLanguageID == 1)
+                                {
+                                    <span class="badge bg-primary">Turkish</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">English</span>
+                                }
+                            </td>
+                            <td>
+                                @if (collection.BIsValid)
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Inactive</span>
+                                }
+                            </td>
+                            <td>@collection.BCreatedDate.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="/Collections/Edit/@collection.BID" class="btn btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button class="btn btn-outline-danger" onclick="toggleCollectionStatus(@collection.BID, @collection.BIsValid.ToString().ToLower())">
+                                        <i class="fas fa-toggle-@(collection.BIsValid ? "on" : "off")"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
