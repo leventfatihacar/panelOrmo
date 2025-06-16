@@ -8,9 +8,11 @@ namespace panelOrmo.Services
     public class DatabaseService
     {
         private readonly string _connectionString;
+        private readonly IConfiguration _configuration;
 
         public DatabaseService(IConfiguration configuration)
         {
+            _configuration = configuration;
             _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
 
@@ -414,13 +416,15 @@ namespace panelOrmo.Services
             using var transaction = connection.BeginTransaction();
             try
             {
-                // Get collection group info
-                var groupInfo = await GetCollectionGroupInfo(model.CollectionGroupID, connection, transaction);
-                if (groupInfo == null)
+                // Get collection group info - FIXED: Proper nullable tuple handling
+                var groupInfoResult = await GetCollectionGroupInfo(model.CollectionGroupID, connection, transaction);
+                if (!groupInfoResult.HasValue)
                 {
                     transaction.Rollback();
                     return false;
                 }
+
+                var groupInfo = groupInfoResult.Value; // Extract the value from nullable tuple
 
                 // Get next IDs
                 var nextPID = await GetNextId(connection, "CMSProduct", "PID", transaction);
@@ -428,21 +432,21 @@ namespace panelOrmo.Services
                 var nextPIID = await GetNextId(connection, "CMSProductImage", "PIID", transaction);
 
                 var createdDate = DateTime.Now;
-                var productName = $"{groupInfo.CollectionName} - {model.ProductCode}";
+                var productName = $"{groupInfo.CollectionName} - {model.ProductCode}"; // FIXED: Proper access
                 var formattedContent = $"<p>{model.Content}</p>";
 
                 // Insert into CMSProduct
                 var productQuery = @"INSERT INTO CMSProduct (PID, PDepartmentID, PListType, PCode, PStockCode, 
-                               PName, PBrand, PInfoPreview, PInfo, PLittlePicture, PMiddlePicture, PBigPicture, 
-                               PRawPrice, PPrice, PStockAmount, PMinStockAmount, PRealStockAmount, PIsNew, 
-                               PVatRatio, PDiscountRatio, PVatIncluded, PMoneyTypeID, POrder, PDesi, PSeason, 
-                               PSeasonDescription, PColorFirst, PColorSecond, PContent, PTechnical, P3D, 
-                               PSaleStartDate, PSaleFinishDate, PIsNebimIntegration, PVirtualPrice, 
-                               PIsVirtualPriceEnable, PIsValid, PCreatedDate, PCreatedUserID)
-                               VALUES (@pid, NULL, '', @pcode, @pcode, @pname, '', @pname, NULL, NULL, NULL, NULL, 
-                               0.00, 0.00, NULL, NULL, NULL, NULL, 0.00, 0.00, NULL, NULL, NULL, NULL, NULL, 
-                               NULL, NULL, NULL, @content, NULL, NULL, NULL, NULL, 0, NULL, NULL, @isValid, 
-                               @createdDate, @userId)";
+                                   PName, PBrand, PInfoPreview, PInfo, PLittlePicture, PMiddlePicture, PBigPicture, 
+                                   PRawPrice, PPrice, PStockAmount, PMinStockAmount, PRealStockAmount, PIsNew, 
+                                   PVatRatio, PDiscountRatio, PVatIncluded, PMoneyTypeID, POrder, PDesi, PSeason, 
+                                   PSeasonDescription, PColorFirst, PColorSecond, PContent, PTechnical, P3D, 
+                                   PSaleStartDate, PSaleFinishDate, PIsNebimIntegration, PVirtualPrice, 
+                                   PIsVirtualPriceEnable, PIsValid, PCreatedDate, PCreatedUserID)
+                                   VALUES (@pid, NULL, '', @pcode, @pcode, @pname, '', @pname, NULL, NULL, NULL, NULL, 
+                                   0.00, 0.00, NULL, NULL, NULL, NULL, 0.00, 0.00, NULL, NULL, NULL, NULL, NULL, 
+                                   NULL, NULL, NULL, @content, NULL, NULL, NULL, NULL, 0, NULL, NULL, @isValid, 
+                                   @createdDate, @userId)";
 
                 using var productCommand = new SqlCommand(productQuery, connection, transaction);
                 productCommand.Parameters.AddWithValue("@pid", nextPID);
@@ -456,8 +460,8 @@ namespace panelOrmo.Services
 
                 // Insert into CMSProductDepartment
                 var deptQuery = @"INSERT INTO CMSProductDepartment (PDID, PDDepartmentID, PDProductID, 
-                             PDOrder, PDCreatedDate, PDCreatedUserID)
-                             VALUES (@pdid, @deptId, @productId, 1, @createdDate, @userId)";
+                                 PDOrder, PDCreatedDate, PDCreatedUserID)
+                                 VALUES (@pdid, @deptId, @productId, 1, @createdDate, @userId)";
 
                 using var deptCommand = new SqlCommand(deptQuery, connection, transaction);
                 deptCommand.Parameters.AddWithValue("@pdid", nextPDID);
@@ -470,7 +474,7 @@ namespace panelOrmo.Services
                 // Handle image uploads if provided
                 if (model.SmallImage != null || model.MediumImage != null)
                 {
-                    var ftpService = new FTPService(_configuration);
+                    var ftpService = new FTPService(_configuration); // FIXED: Now _configuration is available
                     string smallImagePath = null, mediumImagePath = null;
 
                     if (model.SmallImage != null)
@@ -485,17 +489,17 @@ namespace panelOrmo.Services
 
                     // Insert into CMSProductImage
                     var imageQuery = @"INSERT INTO CMSProductImage (PIID, PIProductID, PIProductVariationID, 
-                                 PIPositionX, PIPositionY, PISmallImage, PIMediumImage, PIBigImage, 
-                                 PIDescription, PIGroup, PIOrder, PIIsValid, PICreatedDate, PICreatedUserID)
-                                 VALUES (@piid, @productId, NULL, NULL, NULL, @smallImage, @mediumImage, '', 
-                                 @description, '', 0, @isValid, @createdDate, @userId)";
+                                     PIPositionX, PIPositionY, PISmallImage, PIMediumImage, PIBigImage, 
+                                     PIDescription, PIGroup, PIOrder, PIIsValid, PICreatedDate, PICreatedUserID)
+                                     VALUES (@piid, @productId, NULL, NULL, NULL, @smallImage, @mediumImage, '', 
+                                     @description, '', 0, @isValid, @createdDate, @userId)";
 
                     using var imageCommand = new SqlCommand(imageQuery, connection, transaction);
                     imageCommand.Parameters.AddWithValue("@piid", nextPIID);
                     imageCommand.Parameters.AddWithValue("@productId", nextPID);
                     imageCommand.Parameters.AddWithValue("@smallImage", smallImagePath ?? (object)DBNull.Value);
                     imageCommand.Parameters.AddWithValue("@mediumImage", mediumImagePath ?? (object)DBNull.Value);
-                    imageCommand.Parameters.AddWithValue("@description", $"{groupInfo.GroupName} - {model.ProductCode}");
+                    imageCommand.Parameters.AddWithValue("@description", $"{groupInfo.GroupName} - {model.ProductCode}"); // FIXED: Proper access
                     imageCommand.Parameters.AddWithValue("@isValid", model.IsActive);
                     imageCommand.Parameters.AddWithValue("@createdDate", createdDate);
                     imageCommand.Parameters.AddWithValue("@userId", userId);
@@ -515,9 +519,9 @@ namespace panelOrmo.Services
         private async Task<(string CollectionName, string GroupName)?> GetCollectionGroupInfo(int groupId, SqlConnection connection, SqlTransaction transaction)
         {
             var query = @"SELECT cg.DName as GroupName, c.BName as CollectionName 
-                     FROM CMSDepartment cg 
-                     JOIN CMSDepartment c ON cg.DParentID = c.DID 
-                     WHERE cg.DID = @groupId";
+                         FROM CMSDepartment cg 
+                         JOIN CMSDepartment c ON cg.DParentID = c.DID 
+                         WHERE cg.DID = @groupId";
 
             using var command = new SqlCommand(query, connection, transaction);
             command.Parameters.AddWithValue("@groupId", groupId);
@@ -527,7 +531,7 @@ namespace panelOrmo.Services
             {
                 return (reader.GetString("CollectionName"), reader.GetString("GroupName"));
             }
-            return null;
+            return null; // Return null if no data found
         }
 
         // User Management
