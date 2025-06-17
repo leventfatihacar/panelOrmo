@@ -1,77 +1,463 @@
 ﻿@model panelOrmo.Models.NewsViewModel
 @{
     ViewData["Title"] = "Create News Article";
+    Layout = "_Layout";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Create News Article</h2>
-    <a href="/News" class="btn btn-secondary">
-        <i class="fas fa-arrow-left me-2"></i>Back to List
-    </a>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">
+            <i class="fas fa-plus-circle me-2 text-primary"></i>
+            Create News Article
+        </h2>
+        <p class="text-muted mb-0">Add a new article to your news section</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/News/Index" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to List
+        </a>
+        <button type="button" class="btn btn-outline-info" onclick="previewArticle()">
+            <i class="fas fa-eye me-2"></i>Preview
+        </button>
+    </div>
 </div>
 
-<div class="card">
-    <div class="card-body">
-        <form asp-action="Create" method="post" enctype="multipart/form-data">
-            <div class="row">
-                <div class="col-md-8">
-                    <div class="mb-3">
-                        <label asp-for="Title" class="form-label">Title *</label>
-                        <input asp-for="Title" class="form-control" placeholder="Enter news title" />
-                        <span asp-validation-for="Title" class="text-danger"></span>
-                    </div>
-
-                    <div class="mb-3">
-                        <label asp-for="Content" class="form-label">Content *</label>
-                        <textarea asp-for="Content" class="form-control" rows="10" placeholder="Enter news content"></textarea>
-                        <span asp-validation-for="Content" class="text-danger"></span>
-                    </div>
+<!-- Progress Steps -->
+<div class="card mb-4">
+    <div class="card-body py-3">
+        <div class="row text-center">
+            <div class="col-md-3">
+                <div class="d-flex align-items-center justify-content-center">
+                    <span class="badge bg-primary rounded-pill me-2">1</span>
+                    <span class="fw-bold text-primary">Article Details</span>
                 </div>
+            </div>
+            <div class="col-md-3">
+                <div class="d-flex align-items-center justify-content-center">
+                    <span class="badge bg-light text-dark rounded-pill me-2">2</span>
+                    <span class="text-muted">Content & Media</span>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="d-flex align-items-center justify-content-center">
+                    <span class="badge bg-light text-dark rounded-pill me-2">3</span>
+                    <span class="text-muted">Settings</span>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="d-flex align-items-center justify-content-center">
+                    <span class="badge bg-light text-dark rounded-pill me-2">4</span>
+                    <span class="text-muted">Publish</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <label asp-for="LanguageID" class="form-label">Language *</label>
-                        <select asp-for="LanguageID" class="form-select">
-                            <option value="">Select Language</option>
-                            <option value="1">Turkish</option>
-                            <option value="2">English</option>
-                        </select>
-                        <span asp-validation-for="LanguageID" class="text-danger"></span>
+<form asp-action="Create" method="post" enctype="multipart/form-data" id="newsForm">
+    <div class="row">
+        <!-- Main Content Area -->
+        <div class="col-lg-8">
+            <!-- Article Details -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>Article Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <label asp-for="Title" class="form-label fw-bold">
+                            Article Title <span class="text-danger">*</span>
+                        </label>
+                        <input asp-for="Title" class="form-control form-control-lg"
+                               placeholder="Enter an engaging article title..."
+                               onkeyup="updateCharCount('Title', 'titleCount', 100)" />
+                        <div class="d-flex justify-content-between mt-1">
+                            <span asp-validation-for="Title" class="text-danger"></span>
+                            <small class="text-muted">
+                                <span id="titleCount">0</span>/100 characters
+                            </small>
+                        </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label asp-for="Image" class="form-label">Featured Image</label>
-                        <input asp-for="Image" type="file" class="form-control" accept="image/jpeg" />
-                        <div class="form-text">Only .jpg files are allowed</div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label asp-for="PublishDate" class="form-label">Publish Date</label>
-                        <input asp-for="PublishDate" type="datetime-local" class="form-control" />
-                        <div class="form-text">Leave empty for current date/time</div>
-                    </div>
-
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input asp-for="IsActive" class="form-check-input" type="checkbox" checked />
-                            <label asp-for="IsActive" class="form-check-label">
-                                Active
-                            </label>
+                    <div class="mb-4">
+                        <label asp-for="Content" class="form-label fw-bold">
+                            Article Content <span class="text-danger">*</span>
+                        </label>
+                        <div class="toolbar mb-2">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-secondary" onclick="formatText('bold')" title="Bold">
+                                    <i class="fas fa-bold"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="formatText('italic')" title="Italic">
+                                    <i class="fas fa-italic"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="formatText('underline')" title="Underline">
+                                    <i class="fas fa-underline"></i>
+                                </button>
+                            </div>
+                            <div class="btn-group btn-group-sm ms-2" role="group">
+                                <button type="button" class="btn btn-outline-secondary" onclick="insertList('ul')" title="Bullet List">
+                                    <i class="fas fa-list-ul"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="insertList('ol')" title="Numbered List">
+                                    <i class="fas fa-list-ol"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <textarea asp-for="Content" class="form-control" rows="12"
+                                  placeholder="Write your article content here..."
+                                  onkeyup="updateCharCount('Content', 'contentCount', 5000)"></textarea>
+                        <div class="d-flex justify-content-between mt-1">
+                            <span asp-validation-for="Content" class="text-danger"></span>
+                            <small class="text-muted">
+                                <span id="contentCount">0</span>/5000 characters
+                            </small>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="row">
-                <div class="col-12">
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-2"></i>Create Article
-                        </button>
-                        <a href="/News" class="btn btn-secondary">Cancel</a>
+            <!-- SEO & Meta -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-search me-2"></i>SEO & Meta Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Meta Description</label>
+                        <textarea class="form-control" rows="3"
+                                  placeholder="Brief description for search engines..."
+                                  onkeyup="updateCharCount(this, 'metaCount', 160)"></textarea>
+                        <small class="text-muted">
+                            <span id="metaCount">0</span>/160 characters (recommended for SEO)
+                        </small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tags</label>
+                        <input type="text" class="form-control"
+                               placeholder="Enter tags separated by commas..." />
+                        <small class="text-muted">Tags help categorize and find your articles</small>
                     </div>
                 </div>
             </div>
-        </form>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Publication Settings -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog me-2"></i>Publication Settings
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="LanguageID" class="form-label fw-bold">
+                            Language <span class="text-danger">*</span>
+                        </label>
+                        <select asp-for="LanguageID" class="form-select">
+                            <option value="">Select Language</option>
+                            <option value="1">🇹🇷 Turkish</option>
+                            <option value="2">🇺🇸 English</option>
+                        </select>
+                        <span asp-validation-for="LanguageID" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="PublishDate" class="form-label fw-bold">Publish Date</label>
+                        <input asp-for="PublishDate" type="datetime-local" class="form-control" />
+                        <small class="text-muted">Leave empty to publish immediately</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input asp-for="IsActive" class="form-check-input" type="checkbox" checked />
+                            <label asp-for="IsActive" class="form-check-label fw-bold">
+                                Publish Immediately
+                            </label>
+                        </div>
+                        <small class="text-muted">Article will be visible to readers</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Featured Image -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-image me-2"></i>Featured Image
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="Image" class="form-label fw-bold">Upload Image</label>
+                        <input asp-for="Image" type="file" class="form-control" accept="image/jpeg"
+                               onchange="previewImage(this)" />
+                        <small class="text-muted">Only .jpg files are allowed. Recommended size: 1200x630px</small>
+                    </div>
+
+                    <div id="imagePreview" class="text-center" style="display: none;">
+                        <img id="previewImg" src="" alt="Preview" class="img-fluid rounded" style="max-height: 200px;" />
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeImage()">
+                                <i class="fas fa-trash me-1"></i>Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Article Stats
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h4 class="text-primary mb-0" id="wordCount">0</h4>
+                                <small class="text-muted">Words</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-success mb-0" id="readTime">0</h4>
+                            <small class="text-muted">Min Read</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save me-2"></i>Create Article
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="saveDraft()">
+                            <i class="fas fa-file-alt me-2"></i>Save as Draft
+                        </button>
+                        <a href="/News/Index" class="btn btn-outline-danger">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-eye me-2"></i>Article Preview
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="previewContent">
+                    <!-- Preview content will be inserted here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="$('#newsForm').submit()">
+                    <i class="fas fa-save me-2"></i>Create Article
+                </button>
+            </div>
+        </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        // Character count functionality
+        function updateCharCount(elementId, countId, maxLength) {
+            const element = typeof elementId === 'string' ? document.getElementById(elementId) : elementId;
+            const counter = document.getElementById(countId);
+            const length = element.value.length;
+
+            counter.textContent = length;
+
+            if (length > maxLength * 0.9) {
+                counter.className = 'text-warning';
+            } else if (length > maxLength) {
+                counter.className = 'text-danger';
+            } else {
+                counter.className = 'text-muted';
+            }
+
+            // Update word count and reading time
+            if (elementId === 'Content' || element.id === 'Content') {
+                updateWordCount();
+            }
+        }
+
+        // Word count and reading time
+        function updateWordCount() {
+            const content = document.getElementById('Content').value;
+            const words = content.trim().split(/\s+/).filter(word => word.length > 0).length;
+            const readTime = Math.ceil(words / 200); // Average reading speed: 200 words per minute
+
+            document.getElementById('wordCount').textContent = words;
+            document.getElementById('readTime').textContent = readTime;
+        }
+
+        // Image preview functionality
+        function previewImage(input) {
+            const preview = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImg');
+
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function removeImage() {
+            document.getElementById('Image').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+        }
+
+        // Text formatting (basic)
+        function formatText(command) {
+            const textarea = document.getElementById('Content');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const selectedText = textarea.value.substring(start, end);
+
+            let formattedText = '';
+            switch(command) {
+                case 'bold':
+                    formattedText = `**${selectedText}**`;
+                    break;
+                case 'italic':
+                    formattedText = `*${selectedText}*`;
+                    break;
+                case 'underline':
+                    formattedText = `<u>${selectedText}</u>`;
+                    break;
+            }
+
+            textarea.value = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
+            updateCharCount('Content', 'contentCount', 5000);
+        }
+
+        function insertList(type) {
+            const textarea = document.getElementById('Content');
+            const listItem = type === 'ul' ? '• List item\n' : '1. List item\n';
+            const cursorPos = textarea.selectionStart;
+
+            textarea.value = textarea.value.substring(0, cursorPos) + listItem + textarea.value.substring(cursorPos);
+            updateCharCount('Content', 'contentCount', 5000);
+        }
+
+        // Preview functionality
+        function previewArticle() {
+            const title = document.getElementById('Title').value;
+            const content = document.getElementById('Content').value;
+            const languageSelect = document.getElementById('LanguageID');
+            const language = languageSelect.options[languageSelect.selectedIndex].text;
+
+            const previewContent = `
+                <div class="article-preview">
+                    <div class="mb-3">
+                        <span class="badge bg-primary">${language}</span>
+                        <span class="badge bg-success ms-2">${new Date().toLocaleDateString()}</span>
+                    </div>
+                    <h2 class="mb-3">${title || 'Article Title'}</h2>
+                    <div class="article-content">
+                        ${content.replace(/\n/g, '<br>') || 'Article content will appear here...'}
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('previewContent').innerHTML = previewContent;
+            new bootstrap.Modal(document.getElementById('previewModal')).show();
+        }
+
+        // Save as draft
+        function saveDraft() {
+            // Set as inactive and submit
+            document.getElementById('IsActive').checked = false;
+            document.getElementById('newsForm').submit();
+        }
+
+        // Form validation
+        document.getElementById('newsForm').addEventListener('submit', function(e) {
+            const title = document.getElementById('Title').value.trim();
+            const content = document.getElementById('Content').value.trim();
+            const language = document.getElementById('LanguageID').value;
+
+            if (!title || !content || !language) {
+                e.preventDefault();
+                alert('Please fill in all required fields (Title, Content, and Language).');
+                return false;
+            }
+
+            // Show loading state
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating...';
+            submitBtn.disabled = true;
+        });
+
+        // Initialize character counts on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCharCount('Title', 'titleCount', 100);
+            updateCharCount('Content', 'contentCount', 5000);
+            updateWordCount();
+        });
+
+        // Auto-save functionality (every 30 seconds)
+        setInterval(function() {
+            const title = document.getElementById('Title').value;
+            const content = document.getElementById('Content').value;
+
+            if (title || content) {
+                // Save to localStorage as backup
+                localStorage.setItem('newsArticleDraft', JSON.stringify({
+                    title: title,
+                    content: content,
+                    timestamp: new Date().toISOString()
+                }));
+
+                console.log('Draft auto-saved');
+            }
+        }, 30000);
+
+        // Restore from auto-save if available
+        document.addEventListener('DOMContentLoaded', function() {
+            const draft = localStorage.getItem('newsArticleDraft');
+            if (draft) {
+                const draftData = JSON.parse(draft);
+                const draftAge = new Date() - new Date(draftData.timestamp);
+
+                // If draft is less than 1 hour old, offer to restore
+                if (draftAge < 3600000) {
+                    if (confirm('Found an auto-saved draft. Would you like to restore it?')) {
+                        document.getElementById('Title').value = draftData.title;
+                        document.getElementById('Content').value = draftData.content;
+                        updateCharCount('Title', 'titleCount', 100);
+                        updateCharCount('Content', 'contentCount', 5000);
+                        updateWordCount();
+                    }
+                }
+            }
+        });
+    </script>
+}
