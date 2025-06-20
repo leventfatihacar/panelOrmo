@@ -9,7 +9,7 @@ namespace panelOrmo.Models
         public string CTitle { get; set; }
         public string CContent { get; set; }
         public int CLanguageID { get; set; }
-        public string CImage { get; set; }
+        public string? CImage { get; set; }
         public bool CIsValid { get; set; }
         public DateTime CDate { get; set; }
         public DateTime CDate2 { get; set; }
@@ -26,7 +26,7 @@ namespace panelOrmo.Models
         public string Content { get; set; }
         [Required]
         public int LanguageID { get; set; }
-        public IFormFile Image { get; set; }
+        public IFormFile? Image { get; set; }
         public DateTime? PublishDate { get; set; }
         public bool IsActive { get; set; } = true;
     }

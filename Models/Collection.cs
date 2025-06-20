@@ -7,7 +7,7 @@ namespace panelOrmo.Models
         public int DID { get; set; }
         public string DName { get; set; }
         public string DSummary { get; set; }
-        public string DPicture { get; set; }
+        public string? DPicture { get; set; }
         public int DLanguageID { get; set; }
         public bool DIsValid { get; set; }
         public DateTime DCreatedDate { get; set; }
@@ -22,7 +22,7 @@ namespace panelOrmo.Models
         public string Summary { get; set; }
         [Required]
         public int LanguageID { get; set; }
-        public IFormFile Image { get; set; }
+        public IFormFile? Image { get; set; }
         public bool IsActive { get; set; } = true;
     }
 }

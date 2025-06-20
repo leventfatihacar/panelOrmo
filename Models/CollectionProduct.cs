@@ -22,15 +22,15 @@ namespace panelOrmo.Models
         public int CollectionGroupID { get; set; }
         [Required]
         public string Content { get; set; }
-        public IFormFile SmallImage { get; set; }
-        public IFormFile MediumImage { get; set; }
+        public IFormFile? SmallImage { get; set; }
+        public IFormFile? MediumImage { get; set; }
         public bool IsActive { get; set; } = true;
     }
 
     public class CollectionProductEditViewModel
     {
         public CollectionProductViewModel Product { get; set; }
-        public string CurrentSmallImage { get; set; }
-        public string CurrentMediumImage { get; set; }
+        public string? CurrentSmallImage { get; set; }
+        public string? CurrentMediumImage { get; set; }
     }
 }

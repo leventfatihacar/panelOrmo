@@ -686,8 +686,8 @@ namespace panelOrmo.Services
                     PID = reader.GetInt32("PID"),
                     PCode = reader.IsDBNull("PCode") ? "" : reader.GetString("PCode"),
                     PName = reader.GetString("PName"),
-                    PInfoPreview = reader.IsDBNull("PInfoPreview") ? "" : reader.GetString("PInfoPreview"),
-                    PContent = reader.IsDBNull("PContent") ? "" : reader.GetString("PContent"),
+                    PInfoPreview = reader.IsDBNull("PInfoPreview") ? null : reader.GetString("PInfoPreview"),
+                    PContent = reader.IsDBNull("PContent") ? null : reader.GetString("PContent"),
                     PIsValid = reader.IsDBNull("PIsValid") ? true : reader.GetBoolean("PIsValid"),
                     PCreatedDate = reader.GetDateTime("PCreatedDate"),
                     PCreatedUserID = reader.IsDBNull("PCreatedUserID") ? null : reader.GetInt32("PCreatedUserID")
@@ -716,8 +716,8 @@ namespace panelOrmo.Services
                     PID = reader.GetInt32("PID"),
                     PCode = reader.IsDBNull("PCode") ? "" : reader.GetString("PCode"),
                     PName = reader.GetString("PName"),
-                    PInfoPreview = reader.IsDBNull("PInfoPreview") ? "" : reader.GetString("PInfoPreview"),
-                    PContent = reader.IsDBNull("PContent") ? "" : reader.GetString("PContent"),
+                    PInfoPreview = reader.IsDBNull("PInfoPreview") ? null : reader.GetString("PInfoPreview"),
+                    PContent = reader.IsDBNull("PContent") ? null : reader.GetString("PContent"),
                     PIsValid = reader.IsDBNull("PIsValid") ? true : reader.GetBoolean("PIsValid"),
                     PCreatedDate = reader.GetDateTime("PCreatedDate"),
                     PCreatedUserID = reader.IsDBNull("PCreatedUserID") ? null : reader.GetInt32("PCreatedUserID")
