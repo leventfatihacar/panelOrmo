@@ -1,5 +1,4 @@
-﻿
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using panelOrmo.Models;
@@ -33,42 +32,13 @@ namespace panelOrmo.Controllers
         {
             try
             {
-                // Log all incoming data for debugging
-                _logger.LogInformation("=== LOGIN DEBUG INFO ===");
-                _logger.LogInformation("Model Username: '{Username}'", model?.Username ?? "NULL");
-                _logger.LogInformation("Model Password Length: {Length}", model?.Password?.Length ?? 0);
-
-                // Log form data directly
-                _logger.LogInformation("Form Keys: {Keys}", string.Join(", ", Request.Form.Keys));
-                foreach (var key in Request.Form.Keys)
-                {
-                    _logger.LogInformation("Form[{Key}]: '{Value}'", key, Request.Form[key]);
-                }
-
-                // Log ModelState
-                _logger.LogInformation("ModelState Valid: {Valid}", ModelState.IsValid);
-                foreach (var kvp in ModelState)
-                {
-                    _logger.LogInformation("ModelState[{Key}]: Valid={Valid}, Value='{Value}'",
-                        kvp.Key, kvp.Value.ValidationState, kvp.Value.AttemptedValue);
-                }
-
                 if (!ModelState.IsValid)
                 {
-                    _logger.LogWarning("Model validation failed");
-                    foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
-                    {
-                        _logger.LogWarning("Validation Error: {Error}", error.ErrorMessage);
-                    }
                     return View(model);
                 }
 
-                // Manual fallback if model binding fails
                 string username = model?.Username ?? Request.Form["Username"].ToString();
                 string password = model?.Password ?? Request.Form["Password"].ToString();
-
-                _logger.LogInformation("Final values - Username: '{Username}', Password provided: {HasPassword}",
-                    username, !string.IsNullOrEmpty(password));
 
                 if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
                 {
@@ -77,7 +47,6 @@ namespace panelOrmo.Controllers
                 }
 
                 var user = await _databaseService.ValidateUser(username, password);
-                _logger.LogInformation("Database validation result: {Result}", user != null ? "Success" : "Failed");
 
                 if (user != null)
                 {
@@ -100,8 +69,6 @@ namespace panelOrmo.Controllers
                         new ClaimsPrincipal(claimsIdentity),
                         authProperties);
 
-                    _logger.LogInformation("User {Username} logged in successfully", user.Username);
-
                     try
                     {
                         await _databaseService.LogActivity(user.Id, user.Username, "Login", "Users");
@@ -115,14 +82,12 @@ namespace panelOrmo.Controllers
                 }
                 else
                 {
-                    _logger.LogWarning("Invalid login attempt for username: {Username}", username);
                     ModelState.AddModelError("", "Invalid username or password");
                     return View(model);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error during login");
                 ModelState.AddModelError("", "An unexpected error occurred. Please try again.");
                 return View(model);
             }
@@ -155,7 +120,6 @@ namespace panelOrmo.Controllers
                 Method = Request.Method
             };
 
-            _logger.LogInformation("Test Form Data: {@FormData}", result);
             return Json(result);
         }
     }

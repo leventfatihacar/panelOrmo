@@ -14,52 +14,47 @@
 
 <div class="card">
     <div class="card-body">
-        <form asp-action="Create" method="post" enctype="multipart/form-data">
+        <form action="/CollectionGroups/Create" method="post" enctype="multipart/form-data">
             <div class="row">
                 <div class="col-md-8">
                     <div class="mb-3">
-                        <label asp-for="Name" class="form-label">Group Name *</label>
-                        <input asp-for="Name" class="form-control" placeholder="Enter group name" />
-                        <span asp-validation-for="Name" class="text-danger"></span>
+                        <label for="Name" class="form-label">Group Name *</label>
+                        <input name="Name" id="Name" class="form-control" placeholder="Enter group name" />
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="ParentCollectionID" class="form-label">Parent Collection *</label>
-                        <select asp-for="ParentCollectionID" class="form-select">
+                        <label for="ParentCollectionID" class="form-label">Parent Collection *</label>
+                        <select name="ParentCollectionID" id="ParentCollectionID" class="form-select">
                             <option value="">Select Parent Collection</option>
-                            @if (collections != null)
+                            @foreach (var collection in collections)
                             {
-                                @foreach (var collection in collections)
-                                {
-                                    <option value="@collection.BID">@collection.BName</option>
-                                }
+                                <option value="@collection.DID">@collection.DName</option>
                             }
                         </select>
-                        <span asp-validation-for="ParentCollectionID" class="text-danger"></span>
                     </div>
                 </div>
 
                 <div class="col-md-4">
                     <div class="mb-3">
-                        <label asp-for="LanguageID" class="form-label">Language *</label>
-                        <select asp-for="LanguageID" class="form-select">
+                        <label for="LanguageID" class="form-label">Language *</label>
+                        <select name="LanguageID" id="LanguageID" class="form-select">
                             <option value="">Select Language</option>
                             <option value="1">Turkish</option>
                             <option value="2">English</option>
                         </select>
-                        <span asp-validation-for="LanguageID" class="text-danger"></span>
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="Image" class="form-label">Group Image</label>
-                        <input asp-for="Image" type="file" class="form-control" accept="image/jpeg" />
+                        <label for="Image" class="form-label">Group Image</label>
+                        <input name="Image" id="Image" type="file" class="form-control" accept="image/jpeg" />
                         <div class="form-text">Only .jpg files are allowed</div>
                     </div>
 
                     <div class="mb-3">
                         <div class="form-check">
-                            <input asp-for="IsActive" class="form-check-input" type="checkbox" checked />
-                            <label asp-for="IsActive" class="form-check-label">
+                            <input name="IsActive" id="IsActive" class="form-check-input" type="checkbox" value="true" checked />
+                            <input type="hidden" name="IsActive" value="false" />
+                            <label for="IsActive" class="form-check-label">
                                 Active
                             </label>
                         </div>

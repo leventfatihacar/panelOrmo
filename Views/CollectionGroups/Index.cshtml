@@ -356,8 +356,25 @@
 
         function deleteGroup(id) {
             if (confirm('Are you sure you want to delete this collection group? This action cannot be undone.')) {
-                // Add delete functionality here
-                alert('Delete functionality not implemented yet');
+                fetch('/CollectionGroups/Delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(id)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error deleting collection group');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting collection group');
+                });
             }
         }
 

@@ -279,8 +279,25 @@
 
         function deleteNews(id) {
             if (confirm('Are you sure you want to delete this news article? This action cannot be undone.')) {
-                // Add delete functionality here
-                alert('Delete functionality not implemented yet');
+                fetch('/News/Delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(id)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error deleting news article');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting news article');
+                });
             }
         }
 

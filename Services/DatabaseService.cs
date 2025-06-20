@@ -2,6 +2,7 @@
 using panelOrmo.Models;
 using System.Data;
 using System.Data.SqlClient;
+using Microsoft.Extensions.Logging;
 
 namespace panelOrmo.Services
 {
@@ -9,11 +10,13 @@ namespace panelOrmo.Services
     {
         private readonly string _connectionString;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<DatabaseService> _logger;
 
-        public DatabaseService(IConfiguration configuration)
+        public DatabaseService(IConfiguration configuration, ILogger<DatabaseService> logger)
         {
             _configuration = configuration;
             _connectionString = configuration.GetConnectionString("DefaultConnection");
+            _logger = logger;
         }
 
         // User Management
@@ -69,20 +72,31 @@ namespace panelOrmo.Services
 
         public async Task<bool> CreateUser(UserCreateViewModel model, int createdBy)
         {
-            using var connection = new SqlConnection(_connectionString);
-            var query = @"INSERT INTO Users (Username, Password, Email, IsSuperAdmin, IsActive, CreatedDate, CreatedBy) 
-                         VALUES (@username, @password, @email, @isSuperAdmin, 1, @createdDate, @createdBy)";
-            using var command = new SqlCommand(query, connection);
-            command.Parameters.AddWithValue("@username", model.Username);
-            command.Parameters.AddWithValue("@password", model.Password); // In production, hash the password
-            command.Parameters.AddWithValue("@email", model.Email);
-            command.Parameters.AddWithValue("@isSuperAdmin", model.IsSuperAdmin);
-            command.Parameters.AddWithValue("@createdDate", DateTime.Now);
-            command.Parameters.AddWithValue("@createdBy", createdBy);
+            try
+            {
+                _logger.LogDebug("CreateUser called with Username: {Username}, Email: {Email}, IsSuperAdmin: {IsSuperAdmin}, CreatedBy: {CreatedBy}", model.Username, model.Email, model.IsSuperAdmin, createdBy);
+                using var connection = new SqlConnection(_connectionString);
+                var query = @"INSERT INTO Users (Username, Password, Email, IsSuperAdmin, IsActive, CreatedDate, CreatedBy) 
+                             VALUES (@username, @password, @email, @isSuperAdmin, 1, @createdDate, @createdBy)";
+                using var command = new SqlCommand(query, connection);
+                command.Parameters.AddWithValue("@username", model.Username);
+                command.Parameters.AddWithValue("@password", model.Password); // In production, hash the password
+                command.Parameters.AddWithValue("@email", model.Email);
+                command.Parameters.AddWithValue("@isSuperAdmin", model.IsSuperAdmin);
+                command.Parameters.AddWithValue("@createdDate", DateTime.Now);
+                command.Parameters.AddWithValue("@createdBy", createdBy);
 
-            await connection.OpenAsync();
-            var result = await command.ExecuteNonQueryAsync();
-            return result > 0;
+                await connection.OpenAsync();
+                _logger.LogDebug("SQL Connection opened and command prepared.");
+                var result = await command.ExecuteNonQueryAsync();
+                _logger.LogDebug("SQL ExecuteNonQueryAsync result: {Result}", result);
+                return result > 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception in CreateUser");
+                return false;
+            }
         }
 
         // News Management
@@ -119,9 +133,85 @@ namespace panelOrmo.Services
             return newsList;
         }
 
+        public async Task<News> GetNewsById(int id)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            var query = @"SELECT CID, CName, CTitle, CContent, CLanguageID, CImage, CIsValid, 
+                         CDate, CDate2, CCreatedDate, CCreatedUserID, COrder 
+                         FROM CMSContent WHERE CID = @id AND CTypeID = 4";
+            using var command = new SqlCommand(query, connection);
+            command.Parameters.AddWithValue("@id", id);
+
+            await connection.OpenAsync();
+            using var reader = await command.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
+            {
+                return new News
+                {
+                    CID = reader.GetInt32("CID"),
+                    CName = reader.GetString("CName"),
+                    CTitle = reader.GetString("CTitle"),
+                    CContent = reader.IsDBNull("CContent") ? "" : reader.GetString("CContent"),
+                    CLanguageID = reader.GetInt32("CLanguageID"),
+                    CImage = reader.IsDBNull("CImage") ? "" : reader.GetString("CImage"),
+                    CIsValid = reader.GetBoolean("CIsValid"),
+                    CDate = reader.GetDateTime("CDate"),
+                    CDate2 = reader.GetDateTime("CDate2"),
+                    CCreatedDate = reader.GetDateTime("CCreatedDate"),
+                    CCreatedUserID = reader.IsDBNull("CCreatedUserID") ? null : reader.GetInt32("CCreatedUserID"),
+                    COrder = reader.GetInt32("COrder")
+                };
+            }
+            return null;
+        }
+
+        public async Task<bool> UpdateNews(int id, NewsViewModel model, int userId, string imagePath = null)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var publishDate = model.PublishDate ?? DateTime.Now;
+
+            var query = @"UPDATE CMSContent SET 
+                         CName = @cname, 
+                         CTitle = @ctitle, 
+                         CLanguageID = @languageId, 
+                         CContent = @content, 
+                         CIsValid = @isValid, 
+                         CDate = @date, 
+                         CDate2 = @date2";
+
+            if (imagePath != null)
+            {
+                query += ", CImage = @image";
+            }
+
+            query += " WHERE CID = @id";
+
+            using var command = new SqlCommand(query, connection);
+            command.Parameters.AddWithValue("@id", id);
+            command.Parameters.AddWithValue("@cname", model.Title);
+            command.Parameters.AddWithValue("@ctitle", model.Title);
+            command.Parameters.AddWithValue("@languageId", model.LanguageID);
+            command.Parameters.AddWithValue("@content", model.Content);
+            command.Parameters.AddWithValue("@isValid", model.IsActive);
+            command.Parameters.AddWithValue("@date", publishDate);
+            command.Parameters.AddWithValue("@date2", publishDate);
+
+            if (imagePath != null)
+            {
+                command.Parameters.AddWithValue("@image", imagePath);
+            }
+
+            var result = await command.ExecuteNonQueryAsync();
+            return result > 0;
+        }
+
         public async Task<bool> CreateNews(NewsViewModel model, int userId, string imagePath = null)
         {
             using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
 
             // Get next CID and COrder
             var nextCID = await GetNextId(connection, "CMSContent", "CID");
@@ -152,7 +242,6 @@ namespace panelOrmo.Services
             command.Parameters.AddWithValue("@createdDate", publishDate);
             command.Parameters.AddWithValue("@createdUserId", userId);
 
-            await connection.OpenAsync();
             var result = await command.ExecuteNonQueryAsync();
             return result > 0;
         }
@@ -162,9 +251,7 @@ namespace panelOrmo.Services
         {
             var collections = new List<Collection>();
             using var connection = new SqlConnection(_connectionString);
-            var query = @"SELECT BID, BName, BTitle, BSummary, BImage, BLanguageID, BIsValid, 
-                         BDate, BDate2, BCreatedDate, BCreatedUserID, BOrder 
-                         FROM CMSBanner WHERE BTypeID = 2 ORDER BY BOrder DESC";
+            var query = @"SELECT DID, DName, DSummary, DPicture, DLanguageID, DIsValid, DCreatedDate, DCreatedUserID, DOrder FROM CMSDepartment WHERE DParentID = -1 ORDER BY DOrder DESC";
             using var command = new SqlCommand(query, connection);
 
             await connection.OpenAsync();
@@ -174,21 +261,128 @@ namespace panelOrmo.Services
             {
                 collections.Add(new Collection
                 {
-                    BID = reader.GetInt32("BID"),
-                    BName = reader.GetString("BName"),
-                    BTitle = reader.GetString("BTitle"),
-                    BSummary = reader.IsDBNull("BSummary") ? "" : reader.GetString("BSummary"),
-                    BImage = reader.IsDBNull("BImage") ? "" : reader.GetString("BImage"),
-                    BLanguageID = reader.GetInt32("BLanguageID"),
-                    BIsValid = reader.GetBoolean("BIsValid"),
-                    BDate = reader.GetDateTime("BDate"),
-                    BDate2 = reader.GetDateTime("BDate2"),
-                    BCreatedDate = reader.GetDateTime("BCreatedDate"),
-                    BCreatedUserID = reader.IsDBNull("BCreatedUserID") ? null : reader.GetInt32("BCreatedUserID"),
-                    BOrder = reader.GetInt32("BOrder")
+                    DID = reader.GetInt32("DID"),
+                    DName = reader.GetString("DName"),
+                    DSummary = reader.IsDBNull("DSummary") ? "" : reader.GetString("DSummary"),
+                    DPicture = reader.IsDBNull("DPicture") ? "" : reader.GetString("DPicture"),
+                    DLanguageID = reader.GetInt32("DLanguageID"),
+                    DIsValid = reader.GetBoolean("DIsValid"),
+                    DCreatedDate = reader.GetDateTime("DCreatedDate"),
+                    DCreatedUserID = reader.IsDBNull("DCreatedUserID") ? null : reader.GetInt32("DCreatedUserID"),
+                    DOrder = reader.GetInt32("DOrder")
                 });
             }
             return collections;
+        }
+
+        public async Task<Collection> GetCollectionById(int id)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            var query = @"SELECT DID, DName, DSummary, DPicture, DLanguageID, DIsValid, DCreatedDate, DCreatedUserID, DOrder FROM CMSDepartment WHERE DID = @id AND DParentID = -1";
+            using var command = new SqlCommand(query, connection);
+            command.Parameters.AddWithValue("@id", id);
+
+            await connection.OpenAsync();
+            using var reader = await command.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
+            {
+                return new Collection
+                {
+                    DID = reader.GetInt32("DID"),
+                    DName = reader.GetString("DName"),
+                    DSummary = reader.IsDBNull("DSummary") ? "" : reader.GetString("DSummary"),
+                    DPicture = reader.IsDBNull("DPicture") ? "" : reader.GetString("DPicture"),
+                    DLanguageID = reader.GetInt32("DLanguageID"),
+                    DIsValid = reader.GetBoolean("DIsValid"),
+                    DCreatedDate = reader.GetDateTime("DCreatedDate"),
+                    DCreatedUserID = reader.IsDBNull("DCreatedUserID") ? null : reader.GetInt32("DCreatedUserID"),
+                    DOrder = reader.GetInt32("DOrder")
+                };
+            }
+            return null;
+        }
+
+        public async Task<bool> UpdateCollection(int id, CollectionViewModel model, int userId, string imagePath = null)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+            using var transaction = connection.BeginTransaction();
+
+            try
+            {
+                // Update CMSDepartment
+                var deptQuery = @"UPDATE CMSDepartment SET 
+                                 DLanguageID = @languageId, 
+                                 DName = @dname, 
+                                 DSummary = @dsummary, 
+                                 DIsValid = @isValid";
+                if (imagePath != null)
+                {
+                    deptQuery += ", DPicture = @dpicture";
+                }
+                deptQuery += " WHERE DID = @id AND DParentID = -1";
+
+                using (var deptCommand = new SqlCommand(deptQuery, connection, transaction))
+                {
+                    deptCommand.Parameters.AddWithValue("@id", id);
+                    deptCommand.Parameters.AddWithValue("@languageId", model.LanguageID);
+                    deptCommand.Parameters.AddWithValue("@dname", model.Name);
+                    deptCommand.Parameters.AddWithValue("@dsummary", model.Summary ?? "");
+                    deptCommand.Parameters.AddWithValue("@isValid", model.IsActive);
+                    if (imagePath != null)
+                    {
+                        deptCommand.Parameters.AddWithValue("@dpicture", imagePath);
+                    }
+                    await deptCommand.ExecuteNonQueryAsync();
+                }
+
+                // Update CMSBanner
+                var bannerQuery = @"UPDATE CMSBanner SET 
+                                   BName = @bname, 
+                                   BTitle = @btitle, 
+                                   BSummary = @bsummary, 
+                                   BLanguageID = @languageId, 
+                                   BIsValid = @isValid";
+                if (imagePath != null)
+                {
+                    bannerQuery += ", BImage = @bimage";
+                }
+                bannerQuery += " WHERE BObjectID = @id"; // Assuming BObjectID stores the collection DID
+
+                using (var bannerCommand = new SqlCommand(bannerQuery, connection, transaction))
+                {
+                    bannerCommand.Parameters.AddWithValue("@id", id);
+                    bannerCommand.Parameters.AddWithValue("@bname", model.Name);
+                    bannerCommand.Parameters.AddWithValue("@btitle", model.Name);
+                    bannerCommand.Parameters.AddWithValue("@bsummary", model.Summary ?? "");
+                    bannerCommand.Parameters.AddWithValue("@languageId", model.LanguageID);
+                    bannerCommand.Parameters.AddWithValue("@isValid", model.IsActive);
+                    if (imagePath != null)
+                    {
+                        bannerCommand.Parameters.AddWithValue("@bimage", imagePath);
+                    }
+                    await bannerCommand.ExecuteNonQueryAsync();
+                }
+
+                // Update CMSURIMapping
+                var uriQuery = "UPDATE CMSURIMapping SET UMURI = @umuri WHERE UMTable = 'CMSDepartment' AND UMObjectID = @id";
+                using (var uriCommand = new SqlCommand(uriQuery, connection, transaction))
+                {
+                    uriCommand.Parameters.AddWithValue("@id", id);
+                    uriCommand.Parameters.AddWithValue("@umuri", model.Name.ToLower().Replace(" ", "-"));
+                    await uriCommand.ExecuteNonQueryAsync();
+                }
+
+                transaction.Commit();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception in UpdateCollection for ID: {ID}", id);
+                transaction.Rollback();
+                return false;
+            }
         }
 
         public async Task<bool> CreateCollection(CollectionViewModel model, int userId, string imagePath = null)
@@ -200,25 +394,32 @@ namespace panelOrmo.Services
             try
             {
                 // Get next IDs
-                var nextBID = await GetNextId(connection, "CMSBanner", "BID", transaction);
                 var nextDID = await GetNextId(connection, "CMSDepartment", "DID", transaction);
                 var nextUMID = await GetNextId(connection, "CMSURIMapping", "UMID", transaction);
-                var nextBOrder = await GetNextOrder(connection, "CMSBanner", "BOrder", transaction);
                 var nextDOrder = await GetNextOrder(connection, "CMSDepartment", "DOrder", transaction);
+                var nextBID = await GetNextId(connection, "CMSBanner", "BID", transaction);
+                var nextBOrder = await GetNextOrder(connection, "CMSBanner", "BOrder", transaction);
 
-                var startDate = model.StartDate ?? DateTime.Now;
-                var endDate = startDate.AddYears(4);
+                var createdDate = DateTime.Now;
 
-                // Insert into CMSBanner
-                var bannerQuery = @"INSERT INTO CMSBanner (BID, BName, BTitle, BSummary, BContent, BImage, 
-                                   BSecondImage, BThirdImage, BColor, BTypeID, BLanguageID, BMemberID, 
-                                   BMenuID, BMemberGroupID, BDate, BDate2, BStartTime, BEndTime, BDuration, 
-                                   BExternalURL, BOrder, BObjectID, BObjectID2, BObjectID3, BObjectID4, 
-                                   BObjectID5, BIsValid, BCreatedDate, BCreatedUserID)
-                                   VALUES (@bid, @bname, @btitle, @bsummary, '', @bimage, NULL, NULL, '', 
-                                   2, @languageId, NULL, NULL, NULL, @bdate, @bdate2, NULL, NULL, NULL, 
-                                   '/login', @border, NULL, NULL, NULL, NULL, NULL, @isValid, @createdDate, @userId)";
+                // Insert into CMSDepartment (main collection)
+                var deptQuery = @"INSERT INTO CMSDepartment (DID, DLanguageID, DParentID, DName, DListType, DSummary, DExplanation, DPicture, DSecondPicture, DThirdPicture, DFlash, DOrder, DIsValid, DMappedURL, DProductsMappedURL, DURL, DTarget, DFirstImageWidth, DFirstImageHeight, DSecondImageWidth, DSecondImageHeight, DThirdImageWidth, DThirdImageHeight, DCreatedDate, DCreatedUserID)
+                                 VALUES (@did, @languageId, -1, @dname, 'List', @dsummary, '', @dpicture, '', '', '', @dorder, @isValid, '', '', '', '', 0, 0, 0, 0, 0, 0, @createdDate, @userId)";
+                using var deptCommand = new SqlCommand(deptQuery, connection, transaction);
+                deptCommand.Parameters.AddWithValue("@did", nextDID);
+                deptCommand.Parameters.AddWithValue("@languageId", model.LanguageID);
+                deptCommand.Parameters.AddWithValue("@dname", model.Name);
+                deptCommand.Parameters.AddWithValue("@dsummary", model.Summary ?? "");
+                deptCommand.Parameters.AddWithValue("@dpicture", imagePath ?? "");
+                deptCommand.Parameters.AddWithValue("@dorder", nextDOrder);
+                deptCommand.Parameters.AddWithValue("@isValid", model.IsActive);
+                deptCommand.Parameters.AddWithValue("@createdDate", createdDate);
+                deptCommand.Parameters.AddWithValue("@userId", userId);
+                await deptCommand.ExecuteNonQueryAsync();
 
+                // Insert into CMSBanner (for banner info)
+                var bannerQuery = @"INSERT INTO CMSBanner (BID, BName, BTitle, BSummary, BContent, BImage, BSecondImage, BThirdImage, BColor, BTypeID, BLanguageID, BMemberID, BMenuID, BMemberGroupID, BDate, BDate2, BStartTime, BEndTime, BDuration, BExternalURL, BOrder, BObjectID, BObjectID2, BObjectID3, BObjectID4, BObjectID5, BIsValid, BCreatedDate, BCreatedUserID)
+                                   VALUES (@bid, @bname, @btitle, @bsummary, '', @bimage, NULL, NULL, '', 2, @languageId, NULL, NULL, NULL, @bdate, @bdate2, NULL, NULL, NULL, '/login', @border, @did, NULL, NULL, NULL, NULL, @isValid, @createdDate, @userId)";
                 using var bannerCommand = new SqlCommand(bannerQuery, connection, transaction);
                 bannerCommand.Parameters.AddWithValue("@bid", nextBID);
                 bannerCommand.Parameters.AddWithValue("@bname", model.Name);
@@ -226,50 +427,29 @@ namespace panelOrmo.Services
                 bannerCommand.Parameters.AddWithValue("@bsummary", model.Summary ?? "");
                 bannerCommand.Parameters.AddWithValue("@bimage", imagePath ?? (object)DBNull.Value);
                 bannerCommand.Parameters.AddWithValue("@languageId", model.LanguageID);
-                bannerCommand.Parameters.AddWithValue("@bdate", startDate);
-                bannerCommand.Parameters.AddWithValue("@bdate2", endDate);
+                bannerCommand.Parameters.AddWithValue("@bdate", createdDate);
+                bannerCommand.Parameters.AddWithValue("@bdate2", createdDate.AddYears(4));
                 bannerCommand.Parameters.AddWithValue("@border", nextBOrder);
+                bannerCommand.Parameters.AddWithValue("@did", nextDID);
                 bannerCommand.Parameters.AddWithValue("@isValid", model.IsActive);
-                bannerCommand.Parameters.AddWithValue("@createdDate", startDate);
+                bannerCommand.Parameters.AddWithValue("@createdDate", createdDate);
                 bannerCommand.Parameters.AddWithValue("@userId", userId);
                 await bannerCommand.ExecuteNonQueryAsync();
 
-                // Insert into CMSDepartment
-                var deptQuery = @"INSERT INTO CMSDepartment (DID, DLanguageID, DParentID, DName, DListType, 
-                                 DSummary, DExplanation, DPicture, DSecondPicture, DThirdPicture, DFlash, 
-                                 DOrder, DIsValid, DMappedURL, DProductsMappedURL, DURL, DTarget, 
-                                 DFirstImageWidth, DFirstImageHeight, DSecondImageWidth, DSecondImageHeight, 
-                                 DThirdImageWidth, DThirdImageHeight, DCreatedDate, DCreatedUserID)
-                                 VALUES (@did, @languageId, -1, @dname, 'List', '', '', @dpicture, '', '', 
-                                 '', @dorder, @isValid, '', '', '', '', 0, 0, 0, 0, 0, 0, @createdDate, @userId)";
-
-                using var deptCommand = new SqlCommand(deptQuery, connection, transaction);
-                deptCommand.Parameters.AddWithValue("@did", nextDID);
-                deptCommand.Parameters.AddWithValue("@languageId", model.LanguageID);
-                deptCommand.Parameters.AddWithValue("@dname", model.Name);
-                deptCommand.Parameters.AddWithValue("@dpicture", imagePath ?? "");
-                deptCommand.Parameters.AddWithValue("@dorder", nextDOrder);
-                deptCommand.Parameters.AddWithValue("@isValid", model.IsActive);
-                deptCommand.Parameters.AddWithValue("@createdDate", startDate);
-                deptCommand.Parameters.AddWithValue("@userId", userId);
-                await deptCommand.ExecuteNonQueryAsync();
-
                 // Insert into CMSURIMapping
-                var uriQuery = @"INSERT INTO CMSURIMapping (UMID, UMTable, UMGroup, UMURI, UMObjectID, 
-                                UMObjectID2, UMObjectID3, UMOrder, UMCreatedDate)
+                var uriQuery = @"INSERT INTO CMSURIMapping (UMID, UMTable, UMGroup, UMURI, UMObjectID, UMObjectID2, UMObjectID3, UMOrder, UMCreatedDate)
                                 VALUES (@umid, 'CMSDepartment', NULL, @umuri, @objectId, NULL, NULL, 1, @createdDate)";
-
                 using var uriCommand = new SqlCommand(uriQuery, connection, transaction);
                 uriCommand.Parameters.AddWithValue("@umid", nextUMID);
                 uriCommand.Parameters.AddWithValue("@umuri", model.Name.ToLower().Replace(" ", "-"));
                 uriCommand.Parameters.AddWithValue("@objectId", nextDID);
-                uriCommand.Parameters.AddWithValue("@createdDate", startDate);
+                uriCommand.Parameters.AddWithValue("@createdDate", createdDate);
                 await uriCommand.ExecuteNonQueryAsync();
 
                 transaction.Commit();
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
                 transaction.Rollback();
                 return false;
@@ -344,16 +524,106 @@ namespace panelOrmo.Services
             return groups;
         }
 
+        public async Task<CollectionGroup> GetCollectionGroupById(int id)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            var query = @"SELECT d.DID, d.DLanguageID, d.DParentID, d.DName, d.DPicture, d.DIsValid, 
+                     d.DCreatedDate, d.DCreatedUserID, d.DOrder 
+                     FROM CMSDepartment d 
+                     WHERE d.DID = @id AND d.DParentID != -1";
+            using var command = new SqlCommand(query, connection);
+            command.Parameters.AddWithValue("@id", id);
+
+            await connection.OpenAsync();
+            using var reader = await command.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
+            {
+                return new CollectionGroup
+                {
+                    DID = reader.GetInt32("DID"),
+                    DLanguageID = reader.GetInt32("DLanguageID"),
+                    DParentID = reader.GetInt32("DParentID"),
+                    DName = reader.GetString("DName"),
+                    DPicture = reader.IsDBNull("DPicture") ? "" : reader.GetString("DPicture"),
+                    DIsValid = reader.GetBoolean("DIsValid"),
+                    DCreatedDate = reader.GetDateTime("DCreatedDate"),
+                    DCreatedUserID = reader.IsDBNull("DCreatedUserID") ? null : reader.GetInt32("DCreatedUserID"),
+                    DOrder = reader.GetInt32("DOrder")
+                };
+            }
+            return null;
+        }
+
+        public async Task<bool> UpdateCollectionGroup(int id, CollectionGroupViewModel model, int userId, string imagePath = null)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                // Update CMSDepartment
+                var deptQuery = @"UPDATE CMSDepartment SET 
+                                 DLanguageID = @languageId, 
+                                 DParentID = @parentId, 
+                                 DName = @dname, 
+                                 DIsValid = @isValid";
+                if (imagePath != null)
+                {
+                    deptQuery += ", DPicture = @dpicture";
+                }
+                deptQuery += " WHERE DID = @id";
+
+                using (var deptCommand = new SqlCommand(deptQuery, connection, transaction))
+                {
+                    deptCommand.Parameters.AddWithValue("@id", id);
+                    deptCommand.Parameters.AddWithValue("@languageId", model.LanguageID);
+                    deptCommand.Parameters.AddWithValue("@parentId", model.ParentCollectionID);
+                    deptCommand.Parameters.AddWithValue("@dname", model.Name);
+                    deptCommand.Parameters.AddWithValue("@isValid", model.IsActive);
+                    if (imagePath != null)
+                    {
+                        deptCommand.Parameters.AddWithValue("@dpicture", imagePath);
+                    }
+                    await deptCommand.ExecuteNonQueryAsync();
+                }
+
+                // Update CMSURIMapping
+                var uriQuery = "UPDATE CMSURIMapping SET UMURI = @umuri WHERE UMTable = 'CMSDepartment' AND UMObjectID = @id";
+                using (var uriCommand = new SqlCommand(uriQuery, connection, transaction))
+                {
+                    uriCommand.Parameters.AddWithValue("@id", id);
+                    uriCommand.Parameters.AddWithValue("@umuri", model.Name.ToLower().Replace(" ", "-"));
+                    await uriCommand.ExecuteNonQueryAsync();
+                }
+
+                transaction.Commit();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception in UpdateCollectionGroup for ID: {ID}", id);
+                transaction.Rollback();
+                return false;
+            }
+        }
+
         public async Task<bool> CreateCollectionGroup(CollectionGroupViewModel model, int userId, string imagePath = null)
         {
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            var nextDID = await GetNextId(connection, "CMSDepartment", "DID");
-            var nextOrder = await GetNextOrder(connection, "CMSDepartment", "DOrder");
-            var createdDate = DateTime.Now;
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                // Get next IDs
+                var nextDID = await GetNextId(connection, "CMSDepartment", "DID", transaction);
+                var nextUMID = await GetNextId(connection, "CMSURIMapping", "UMID", transaction);
+                var nextOrder = await GetNextOrder(connection, "CMSDepartment", "DOrder", transaction);
+                var createdDate = DateTime.Now;
 
-            var query = @"INSERT INTO CMSDepartment (DID, DLanguageID, DParentID, DName, DListType, 
+                // Insert into CMSDepartment
+                var deptQuery = @"INSERT INTO CMSDepartment (DID, DLanguageID, DParentID, DName, DListType, 
                      DSummary, DExplanation, DPicture, DSecondPicture, DThirdPicture, DFlash, 
                      DOrder, DIsValid, DMappedURL, DProductsMappedURL, DURL, DTarget, 
                      DFirstImageWidth, DFirstImageHeight, DSecondImageWidth, DSecondImageHeight, 
@@ -361,19 +631,37 @@ namespace panelOrmo.Services
                      VALUES (@did, @languageId, @parentId, @dname, 'List', '', '', @dpicture, '', '', 
                      '', @dorder, @isValid, '', '', '', '', 0, 0, 0, 0, 0, 0, @createdDate, @userId)";
 
-            using var command = new SqlCommand(query, connection);
-            command.Parameters.AddWithValue("@did", nextDID);
-            command.Parameters.AddWithValue("@languageId", model.LanguageID);
-            command.Parameters.AddWithValue("@parentId", model.ParentCollectionID);
-            command.Parameters.AddWithValue("@dname", model.Name);
-            command.Parameters.AddWithValue("@dpicture", imagePath ?? "");
-            command.Parameters.AddWithValue("@dorder", nextOrder);
-            command.Parameters.AddWithValue("@isValid", model.IsActive);
-            command.Parameters.AddWithValue("@createdDate", createdDate);
-            command.Parameters.AddWithValue("@userId", userId);
+                using var deptCommand = new SqlCommand(deptQuery, connection, transaction);
+                deptCommand.Parameters.AddWithValue("@did", nextDID);
+                deptCommand.Parameters.AddWithValue("@languageId", model.LanguageID);
+                deptCommand.Parameters.AddWithValue("@parentId", model.ParentCollectionID);
+                deptCommand.Parameters.AddWithValue("@dname", model.Name);
+                deptCommand.Parameters.AddWithValue("@dpicture", imagePath ?? "");
+                deptCommand.Parameters.AddWithValue("@dorder", nextOrder);
+                deptCommand.Parameters.AddWithValue("@isValid", model.IsActive);
+                deptCommand.Parameters.AddWithValue("@createdDate", createdDate);
+                deptCommand.Parameters.AddWithValue("@userId", userId);
+                await deptCommand.ExecuteNonQueryAsync();
 
-            var result = await command.ExecuteNonQueryAsync();
-            return result > 0;
+                // Insert into CMSURIMapping
+                var uriQuery = @"INSERT INTO CMSURIMapping (UMID, UMTable, UMGroup, UMURI, UMObjectID, UMObjectID2, UMObjectID3, UMOrder, UMCreatedDate)
+                                VALUES (@umid, 'CMSDepartment', NULL, @umuri, @objectId, NULL, NULL, 1, @createdDate)";
+                using var uriCommand = new SqlCommand(uriQuery, connection, transaction);
+                uriCommand.Parameters.AddWithValue("@umid", nextUMID);
+                uriCommand.Parameters.AddWithValue("@umuri", model.Name.ToLower().Replace(" ", "-"));
+                uriCommand.Parameters.AddWithValue("@objectId", nextDID);
+                uriCommand.Parameters.AddWithValue("@createdDate", createdDate);
+                await uriCommand.ExecuteNonQueryAsync();
+
+                transaction.Commit();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception in CreateCollectionGroup");
+                transaction.Rollback();
+                return false;
+            }
         }
 
         // Collection Products
@@ -406,6 +694,217 @@ namespace panelOrmo.Services
                 });
             }
             return products;
+        }
+
+        public async Task<CollectionProduct> GetCollectionProductById(int id)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            var query = @"SELECT PID, PCode, PName, PInfoPreview, PContent, PIsValid, 
+                     PCreatedDate, PCreatedUserID 
+                     FROM CMSProduct 
+                     WHERE PID = @id";
+            using var command = new SqlCommand(query, connection);
+            command.Parameters.AddWithValue("@id", id);
+
+            await connection.OpenAsync();
+            using var reader = await command.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
+            {
+                return new CollectionProduct
+                {
+                    PID = reader.GetInt32("PID"),
+                    PCode = reader.IsDBNull("PCode") ? "" : reader.GetString("PCode"),
+                    PName = reader.GetString("PName"),
+                    PInfoPreview = reader.IsDBNull("PInfoPreview") ? "" : reader.GetString("PInfoPreview"),
+                    PContent = reader.IsDBNull("PContent") ? "" : reader.GetString("PContent"),
+                    PIsValid = reader.IsDBNull("PIsValid") ? true : reader.GetBoolean("PIsValid"),
+                    PCreatedDate = reader.GetDateTime("PCreatedDate"),
+                    PCreatedUserID = reader.IsDBNull("PCreatedUserID") ? null : reader.GetInt32("PCreatedUserID")
+                };
+            }
+            return null;
+        }
+
+        private async Task<(int GroupId, string SmallImage, string MediumImage)> GetProductDetailsForEdit(int productId, SqlConnection connection, SqlTransaction transaction = null)
+        {
+            int groupId = 0;
+            string smallImage = null;
+            string mediumImage = null;
+
+            // Get Group ID
+            var groupQuery = "SELECT PDDepartmentID FROM CMSProductDepartment WHERE PDProductID = @productId";
+            using (var groupCommand = new SqlCommand(groupQuery, connection, transaction))
+            {
+                groupCommand.Parameters.AddWithValue("@productId", productId);
+                var result = await groupCommand.ExecuteScalarAsync();
+                if (result != null && result != DBNull.Value)
+                {
+                    groupId = Convert.ToInt32(result);
+                }
+            }
+
+            // Get Images
+            var imageQuery = "SELECT PISmallImage, PIMediumImage FROM CMSProductImage WHERE PIProductID = @productId";
+            using (var imageCommand = new SqlCommand(imageQuery, connection, transaction))
+            {
+                imageCommand.Parameters.AddWithValue("@productId", productId);
+                using (var reader = await imageCommand.ExecuteReaderAsync())
+                {
+                    if (await reader.ReadAsync())
+                    {
+                        smallImage = reader.IsDBNull("PISmallImage") ? null : reader.GetString("PISmallImage");
+                        mediumImage = reader.IsDBNull("PIMediumImage") ? null : reader.GetString("PIMediumImage");
+                    }
+                }
+            }
+
+            return (groupId, smallImage, mediumImage);
+        }
+
+        public async Task<CollectionProductEditViewModel> GetCollectionProductForEdit(int id)
+        {
+            var product = await GetCollectionProductById(id);
+            if (product == null) return null;
+
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+            var details = await GetProductDetailsForEdit(id, connection);
+
+            var viewModel = new CollectionProductEditViewModel
+            {
+                Product = new CollectionProductViewModel
+                {
+                    ProductCode = product.PCode,
+                    Content = product.PContent,
+                    IsActive = product.PIsValid,
+                    CollectionGroupID = details.GroupId
+                },
+                CurrentSmallImage = details.SmallImage,
+                CurrentMediumImage = details.MediumImage
+            };
+
+            return viewModel;
+        }
+
+        public async Task<bool> UpdateCollectionProduct(int id, CollectionProductViewModel model, int userId)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+            using var transaction = connection.BeginTransaction();
+
+            try
+            {
+                var groupInfoResult = await GetCollectionGroupInfo(model.CollectionGroupID, connection, transaction);
+                if (!groupInfoResult.HasValue)
+                {
+                    transaction.Rollback();
+                    return false;
+                }
+                var groupInfo = groupInfoResult.Value;
+                var productName = $"{groupInfo.CollectionName} - {model.ProductCode}";
+                var formattedContent = $"<p>{model.Content}</p>";
+
+                // Update CMSProduct
+                var productQuery = @"UPDATE CMSProduct SET 
+                                   PCode = @pcode, 
+                                   PStockCode = @pcode, 
+                                   PName = @pname, 
+                                   PInfoPreview = @pname, 
+                                   PContent = @content, 
+                                   PIsValid = @isValid
+                                   WHERE PID = @id";
+                using (var productCommand = new SqlCommand(productQuery, connection, transaction))
+                {
+                    productCommand.Parameters.AddWithValue("@id", id);
+                    productCommand.Parameters.AddWithValue("@pcode", model.ProductCode);
+                    productCommand.Parameters.AddWithValue("@pname", productName);
+                    productCommand.Parameters.AddWithValue("@content", formattedContent);
+                    productCommand.Parameters.AddWithValue("@isValid", model.IsActive);
+                    await productCommand.ExecuteNonQueryAsync();
+                }
+
+                // Update CMSProductDepartment
+                var deptQuery = "UPDATE CMSProductDepartment SET PDDepartmentID = @deptId WHERE PDProductID = @id";
+                using (var deptCommand = new SqlCommand(deptQuery, connection, transaction))
+                {
+                    deptCommand.Parameters.AddWithValue("@id", id);
+                    deptCommand.Parameters.AddWithValue("@deptId", model.CollectionGroupID);
+                    await deptCommand.ExecuteNonQueryAsync();
+                }
+
+                // Handle image uploads
+                if (model.SmallImage != null || model.MediumImage != null)
+                {
+                    var ftpService = new FTPService(_configuration);
+                    string smallImagePath = null, mediumImagePath = null;
+
+                    if (model.SmallImage != null)
+                    {
+                        smallImagePath = await ftpService.UploadFile(model.SmallImage, "/httpdocs/CMSFiles/ProductImages/SmallImage");
+                    }
+                    if (model.MediumImage != null)
+                    {
+                        mediumImagePath = await ftpService.UploadFile(model.MediumImage, "/httpdocs/CMSFiles/ProductImages/MediumImage");
+                    }
+
+                    // Check if an image record already exists
+                    var checkImageQuery = "SELECT COUNT(*) FROM CMSProductImage WHERE PIProductID = @id";
+                    int imageCount;
+                    using (var checkCmd = new SqlCommand(checkImageQuery, connection, transaction))
+                    {
+                        checkCmd.Parameters.AddWithValue("@id", id);
+                        imageCount = (int)await checkCmd.ExecuteScalarAsync();
+                    }
+
+                    if (imageCount > 0)
+                    {
+                        // Update existing image record
+                        var imageUpdateQuery = "UPDATE CMSProductImage SET ";
+                        if (smallImagePath != null) imageUpdateQuery += "PISmallImage = @smallImage, ";
+                        if (mediumImagePath != null) imageUpdateQuery += "PIMediumImage = @mediumImage, ";
+                        imageUpdateQuery += "PIDescription = @description, PIIsValid = @isValid WHERE PIProductID = @id";
+
+                        using (var imageCommand = new SqlCommand(imageUpdateQuery, connection, transaction))
+                        {
+                            imageCommand.Parameters.AddWithValue("@id", id);
+                            if (smallImagePath != null) imageCommand.Parameters.AddWithValue("@smallImage", smallImagePath);
+                            if (mediumImagePath != null) imageCommand.Parameters.AddWithValue("@mediumImage", mediumImagePath);
+                            imageCommand.Parameters.AddWithValue("@description", $"{groupInfo.GroupName} - {model.ProductCode}");
+                            imageCommand.Parameters.AddWithValue("@isValid", model.IsActive);
+                            await imageCommand.ExecuteNonQueryAsync();
+                        }
+                    }
+                    else
+                    {
+                        // Insert new image record
+                        var nextPIID = await GetNextId(connection, "CMSProductImage", "PIID", transaction);
+                        var imageInsertQuery = @"INSERT INTO CMSProductImage (PIID, PIProductID, PISmallImage, PIMediumImage, PIDescription, PIIsValid, PICreatedDate, PICreatedUserID)
+                                             VALUES (@piid, @productId, @smallImage, @mediumImage, @description, @isValid, @createdDate, @userId)";
+                        using (var imageCommand = new SqlCommand(imageInsertQuery, connection, transaction))
+                        {
+                            imageCommand.Parameters.AddWithValue("@piid", nextPIID);
+                            imageCommand.Parameters.AddWithValue("@productId", id);
+                            imageCommand.Parameters.AddWithValue("@smallImage", smallImagePath ?? (object)DBNull.Value);
+                            imageCommand.Parameters.AddWithValue("@mediumImage", mediumImagePath ?? (object)DBNull.Value);
+                            imageCommand.Parameters.AddWithValue("@description", $"{groupInfo.GroupName} - {model.ProductCode}");
+                            imageCommand.Parameters.AddWithValue("@isValid", model.IsActive);
+                            imageCommand.Parameters.AddWithValue("@createdDate", DateTime.Now);
+                            imageCommand.Parameters.AddWithValue("@userId", userId);
+                            await imageCommand.ExecuteNonQueryAsync();
+                        }
+                    }
+                }
+
+                transaction.Commit();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception in UpdateCollectionProduct for ID: {ID}", id);
+                transaction.Rollback();
+                return false;
+            }
         }
 
         public async Task<bool> CreateCollectionProduct(CollectionProductViewModel model, int userId)
@@ -509,7 +1008,7 @@ namespace panelOrmo.Services
                 transaction.Commit();
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
                 transaction.Rollback();
                 return false;
@@ -518,7 +1017,7 @@ namespace panelOrmo.Services
 
         private async Task<(string CollectionName, string GroupName)?> GetCollectionGroupInfo(int groupId, SqlConnection connection, SqlTransaction transaction)
         {
-            var query = @"SELECT cg.DName as GroupName, c.BName as CollectionName 
+            var query = @"SELECT cg.DName as GroupName, c.DName as CollectionName 
                          FROM CMSDepartment cg 
                          JOIN CMSDepartment c ON cg.DParentID = c.DID 
                          WHERE cg.DID = @groupId";
@@ -638,6 +1137,107 @@ namespace panelOrmo.Services
             stats["Products"] = (int)await productsCmd.ExecuteScalarAsync();
 
             return stats;
+        }
+
+        // DELETE METHODS
+        public async Task<bool> DeleteNews(int id)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            var query = "DELETE FROM CMSContent WHERE CID = @id";
+            using var command = new SqlCommand(query, connection);
+            command.Parameters.AddWithValue("@id", id);
+            await connection.OpenAsync();
+            var result = await command.ExecuteNonQueryAsync();
+            return result > 0;
+        }
+        public async Task<bool> DeleteCollection(int id)
+        {
+            _logger.LogDebug("DeleteCollection called for ID: {ID}", id);
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                // Delete from CMSURIMapping
+                var uriQuery = "DELETE FROM CMSURIMapping WHERE UMTable = 'CMSDepartment' AND UMObjectID = @id";
+                using (var uriCommand = new SqlCommand(uriQuery, connection, transaction))
+                {
+                    uriCommand.Parameters.AddWithValue("@id", id);
+                    var uriResult = await uriCommand.ExecuteNonQueryAsync();
+                    _logger.LogDebug("DeleteCollection CMSURIMapping result for UMObjectID {ID}: {Result}", id, uriResult);
+                }
+
+                // Delete from CMSDepartment (main collection)
+                var deptQuery = "DELETE FROM CMSDepartment WHERE DID = @id AND DParentID = -1";
+                using (var deptCommand = new SqlCommand(deptQuery, connection, transaction))
+                {
+                    deptCommand.Parameters.AddWithValue("@id", id);
+                    var deptResult = await deptCommand.ExecuteNonQueryAsync();
+                    _logger.LogDebug("DeleteCollection CMSDepartment result for DID {DID}: {Result}", id, deptResult);
+                }
+
+                // Delete from CMSBanner (banner info)
+                var bannerQuery = "DELETE FROM CMSBanner WHERE BID = @id";
+                using (var bannerCommand = new SqlCommand(bannerQuery, connection, transaction))
+                {
+                    bannerCommand.Parameters.AddWithValue("@id", id);
+                    var bannerResult = await bannerCommand.ExecuteNonQueryAsync();
+                    _logger.LogDebug("DeleteCollection CMSBanner result for BID {BID}: {Result}", id, bannerResult);
+                }
+
+                transaction.Commit();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                _logger.LogError(ex, "Exception in DeleteCollection for ID: {ID}", id);
+                return false;
+            }
+        }
+        public async Task<bool> DeleteCollectionGroup(int id)
+        {
+            _logger.LogDebug("DeleteCollectionGroup called for ID: {ID}", id);
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                // Delete from CMSURIMapping
+                var uriQuery = "DELETE FROM CMSURIMapping WHERE UMTable = 'CMSDepartment' AND UMObjectID = @id";
+                using (var uriCommand = new SqlCommand(uriQuery, connection, transaction))
+                {
+                    uriCommand.Parameters.AddWithValue("@id", id);
+                    await uriCommand.ExecuteNonQueryAsync();
+                }
+
+                // Delete from CMSDepartment
+                var deptQuery = "DELETE FROM CMSDepartment WHERE DID = @id";
+                using (var deptCommand = new SqlCommand(deptQuery, connection, transaction))
+                {
+                    deptCommand.Parameters.AddWithValue("@id", id);
+                    await deptCommand.ExecuteNonQueryAsync();
+                }
+
+                transaction.Commit();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                _logger.LogError(ex, "Exception in DeleteCollectionGroup for ID: {ID}", id);
+                return false;
+            }
+        }
+        public async Task<bool> DeleteCollectionProduct(int id)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            var query = "DELETE FROM CMSProduct WHERE PID = @id";
+            using var command = new SqlCommand(query, connection);
+            command.Parameters.AddWithValue("@id", id);
+            await connection.OpenAsync();
+            var result = await command.ExecuteNonQueryAsync();
+            return result > 0;
         }
     }
 }

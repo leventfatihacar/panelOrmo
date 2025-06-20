@@ -39,7 +39,7 @@
             <div class="card-body">
                 <div class="d-flex align-items-center">
                     <div class="flex-grow-1">
-                        <h3 class="mb-0">@Model.Count(c => c.BIsValid)</h3>
+                        <h3 class="mb-0">@Model.Count(c => c.DIsValid)</h3>
                         <p class="mb-0">Active Collections</p>
                     </div>
                     <div class="ms-3">
@@ -54,7 +54,7 @@
             <div class="card-body">
                 <div class="d-flex align-items-center">
                     <div class="flex-grow-1">
-                        <h3 class="mb-0">@Model.Count(c => !c.BIsValid)</h3>
+                        <h3 class="mb-0">@Model.Count(c => !c.DIsValid)</h3>
                         <p class="mb-0">Inactive Collections</p>
                     </div>
                     <div class="ms-3">
@@ -69,7 +69,7 @@
             <div class="card-body">
                 <div class="d-flex align-items-center">
                     <div class="flex-grow-1">
-                        <h3 class="mb-0">@Model.Count(c => c.BLanguageID == 1)</h3>
+                        <h3 class="mb-0">@Model.Count(c => c.DLanguageID == 1)</h3>
                         <p class="mb-0">Turkish Collections</p>
                     </div>
                     <div class="ms-3">
@@ -148,11 +148,11 @@
             <div class="row" id="collectionsGrid">
                 @foreach (var collection in Model)
                 {
-                    <div class="col-md-4 mb-3" data-language="@collection.BLanguageID" data-status="@collection.BIsValid.ToString().ToLower()">
+                    <div class="col-md-4 mb-3" data-language="@collection.DLanguageID" data-status="@collection.DIsValid.ToString().ToLower()">
                         <div class="card h-100 collection-card">
-                            @if (!string.IsNullOrEmpty(collection.BImage))
+                            @if (!string.IsNullOrEmpty(collection.DPicture))
                             {
-                                <img src="@collection.BImage" class="card-img-top" alt="Collection image" style="height: 200px; object-fit: cover;">
+                                <img src="@collection.DPicture" class="card-img-top" alt="Collection image" style="height: 200px; object-fit: cover;">
                             }
                             else
                             {
@@ -162,8 +162,8 @@
                             }
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h5 class="card-title mb-0">@collection.BName</h5>
-                                    @if (collection.BLanguageID == 1)
+                                    <h5 class="card-title mb-0">@collection.DName</h5>
+                                    @if (collection.DLanguageID == 1)
                                     {
                                         <span class="badge bg-primary">🇹🇷 TR</span>
                                     }
@@ -172,9 +172,9 @@
                                         <span class="badge bg-success">🇺🇸 EN</span>
                                     }
                                 </div>
-                                <p class="card-text text-muted small">@collection.BSummary</p>
+                                <p class="card-text text-muted small">@collection.DSummary</p>
                                 <div class="d-flex justify-content-between align-items-center">
-                                    @if (collection.BIsValid)
+                                    @if (collection.DIsValid)
                                     {
                                         <span class="badge bg-success">
                                             <i class="fas fa-check me-1"></i>Active
@@ -188,21 +188,21 @@
                                     }
                                     <small class="text-muted">
                                         <i class="fas fa-calendar me-1"></i>
-                                        @collection.BCreatedDate.ToString("dd/MM/yyyy")
+                                        @collection.DCreatedDate.ToString("dd/MM/yyyy")
                                     </small>
                                 </div>
                             </div>
                             <div class="card-footer bg-transparent">
                                 <div class="btn-group w-100" role="group">
-                                    <a href="/Collections/Edit/@collection.BID" class="btn btn-outline-primary btn-sm">
+                                    <a href="/Collections/Edit/@collection.DID" class="btn btn-outline-primary btn-sm">
                                         <i class="fas fa-edit"></i> Edit
                                     </a>
-                                    <button class="btn btn-outline-@(collection.BIsValid ? "warning" : "success") btn-sm"
-                                            onclick="toggleCollectionStatus(@collection.BID, @collection.BIsValid.ToString().ToLower())">
-                                        <i class="fas fa-toggle-@(collection.BIsValid ? "on" : "off")"></i>
-                                        @(collection.BIsValid ? "Disable" : "Enable")
+                                    <button class="btn btn-outline-@(collection.DIsValid ? "warning" : "success") btn-sm"
+                                            onclick="toggleCollectionStatus(@collection.DID, @collection.DIsValid.ToString().ToLower())">
+                                        <i class="fas fa-toggle-@(collection.DIsValid ? "on" : "off")"></i>
+                                        @(collection.DIsValid ? "Disable" : "Enable")
                                     </button>
-                                    <button class="btn btn-outline-danger btn-sm" onclick="deleteCollection(@collection.BID)">
+                                    <button class="btn btn-outline-danger btn-sm" onclick="deleteCollection(@collection.DID)">
                                         <i class="fas fa-trash"></i> Delete
                                     </button>
                                 </div>
@@ -231,13 +231,13 @@
                     <tbody>
                         @foreach (var collection in Model)
                         {
-                            <tr data-language="@collection.BLanguageID" data-status="@collection.BIsValid.ToString().ToLower()">
-                                <td class="fw-bold text-success">#@collection.BID</td>
+                            <tr data-language="@collection.DLanguageID" data-status="@collection.DIsValid.ToString().ToLower()">
+                                <td class="fw-bold text-success">#@collection.DID</td>
                                 <td>
                                     <div class="d-flex align-items-center">
-                                        @if (!string.IsNullOrEmpty(collection.BImage))
+                                        @if (!string.IsNullOrEmpty(collection.DPicture))
                                         {
-                                            <img src="@collection.BImage" alt="Collection image" class="me-2" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px;">
+                                            <img src="@collection.DPicture" alt="Collection image" class="me-2" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px;">
                                         }
                                         else
                                         {
@@ -246,13 +246,13 @@
                                             </div>
                                         }
                                         <div>
-                                            <div class="fw-bold">@collection.BName</div>
+                                            <div class="fw-bold">@collection.DName</div>
                                         </div>
                                     </div>
                                 </td>
-                                <td>@collection.BSummary</td>
+                                <td>@collection.DSummary</td>
                                 <td>
-                                    @if (collection.BLanguageID == 1)
+                                    @if (collection.DLanguageID == 1)
                                     {
                                         <span class="badge bg-primary">
                                             <i class="fas fa-flag me-1"></i>Turkish
@@ -266,7 +266,7 @@
                                     }
                                 </td>
                                 <td>
-                                    @if (collection.BIsValid)
+                                    @if (collection.DIsValid)
                                     {
                                         <span class="badge bg-success">
                                             <i class="fas fa-check me-1"></i>Active
@@ -281,21 +281,21 @@
                                 </td>
                                 <td>
                                     <div class="small">
-                                        <div><i class="fas fa-calendar me-1"></i>@collection.BCreatedDate.ToString("dd/MM/yyyy")</div>
-                                        <div class="text-muted"><i class="fas fa-clock me-1"></i>@collection.BCreatedDate.ToString("HH:mm")</div>
+                                        <div><i class="fas fa-calendar me-1"></i>@collection.DCreatedDate.ToString("dd/MM/yyyy")</div>
+                                        <div class="text-muted"><i class="fas fa-clock me-1"></i>@collection.DCreatedDate.ToString("HH:mm")</div>
                                     </div>
                                 </td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm">
-                                        <a href="/Collections/Edit/@collection.BID" class="btn btn-outline-primary" title="Edit">
+                                        <a href="/Collections/Edit/@collection.DID" class="btn btn-outline-primary" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <button class="btn btn-outline-@(collection.BIsValid ? "warning" : "success")"
-                                                onclick="toggleCollectionStatus(@collection.BID, @collection.BIsValid.ToString().ToLower())"
-                                                title="@(collection.BIsValid ? "Deactivate" : "Activate")">
-                                            <i class="fas fa-toggle-@(collection.BIsValid ? "on" : "off")"></i>
+                                        <button class="btn btn-outline-@(collection.DIsValid ? "warning" : "success")"
+                                                onclick="toggleCollectionStatus(@collection.DID, @collection.DIsValid.ToString().ToLower())"
+                                                title="@(collection.DIsValid ? "Deactivate" : "Activate")">
+                                            <i class="fas fa-toggle-@(collection.DIsValid ? "on" : "off")"></i>
                                         </button>
-                                        <button class="btn btn-outline-danger" onclick="deleteCollection(@collection.BID)" title="Delete">
+                                        <button class="btn btn-outline-danger" onclick="deleteCollection(@collection.DID)" title="Delete">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -366,8 +366,25 @@
 
         function deleteCollection(id) {
             if (confirm('Are you sure you want to delete this collection? This action cannot be undone.')) {
-                // Add delete functionality here
-                alert('Delete functionality not implemented yet');
+                fetch('/Collections/Delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(id)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error deleting collection');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting collection');
+                });
             }
         }
 

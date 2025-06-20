@@ -1,0 +1,78 @@
+@model panelOrmo.Models.CollectionProductEditViewModel
+@{
+    ViewData["Title"] = "Edit Collection Product";
+    Layout = "_Layout";
+    var collectionGroups = ViewBag.CollectionGroups as List<panelOrmo.Models.CollectionGroup>;
+}
+
+<div class="container mt-4">
+    <h2>Edit Collection Product</h2>
+    <form action="/CollectionProducts/Edit/@ViewContext.RouteData.Values["id"]" method="post" enctype="multipart/form-data">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="mb-3">
+                    <label for="Product_ProductCode" class="form-label">Product Code *</label>
+                    <input name="Product.ProductCode" id="Product_ProductCode" class="form-control" placeholder="Enter product code" value="@Model.Product.ProductCode" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="Product_CollectionGroupID" class="form-label">Collection Group *</label>
+                    <select name="Product.CollectionGroupID" id="Product_CollectionGroupID" class="form-select">
+                        <option value="">Select Collection Group</option>
+                        @if (collectionGroups != null)
+                        {
+                            @foreach (var group in collectionGroups)
+                            {
+                                <option value="@group.DID" selected="@(Model.Product.CollectionGroupID == group.DID)">@group.DName</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="Product_Content" class="form-label">Product Content *</label>
+                    <textarea name="Product.Content" id="Product_Content" class="form-control" rows="5" placeholder="Enter product details and ingredients">@Model.Product.Content</textarea>
+                    <div class="form-text">Content will be automatically wrapped in &lt;p&gt; tags</div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label for="Product_SmallImage" class="form-label">Small Image</label>
+                    <input name="Product.SmallImage" id="Product_SmallImage" type="file" class="form-control" accept="image/jpeg" />
+                    <div class="form-text">Small product image (.jpg only). Leave blank to keep current.</div>
+                    @if (!string.IsNullOrEmpty(Model.CurrentSmallImage))
+                    {
+                        <div class="mt-2">
+                            <p>Current:</p>
+                            <img src="@Model.CurrentSmallImage" style="max-width: 100px;" />
+                        </div>
+                    }
+                </div>
+
+                <div class="mb-3">
+                    <label for="Product_MediumImage" class="form-label">Medium Image</label>
+                    <input name="Product.MediumImage" id="Product_MediumImage" type="file" class="form-control" accept="image/jpeg" />
+                    <div class="form-text">Medium product image (.jpg only). Leave blank to keep current.</div>
+                    @if (!string.IsNullOrEmpty(Model.CurrentMediumImage))
+                    {
+                        <div class="mt-2">
+                            <p>Current:</p>
+                            <img src="@Model.CurrentMediumImage" style="max-width: 150px;" />
+                        </div>
+                    }
+                </div>
+
+                <div class="form-check mb-3">
+                    <input name="Product.IsActive" id="Product_IsActive" class="form-check-input" type="checkbox" value="true" checked="@Model.Product.IsActive" />
+                    <label for="Product_IsActive" class="form-check-label">Active</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a href="/CollectionProducts/Index" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div> 

@@ -13,48 +13,47 @@
 
 <div class="card">
     <div class="card-body">
-        <form asp-action="Create" method="post" enctype="multipart/form-data">
+        <form action="/Collections/Create" method="post" enctype="multipart/form-data">
             <div class="row">
                 <div class="col-md-8">
                     <div class="mb-3">
-                        <label asp-for="Name" class="form-label">Collection Name *</label>
-                        <input asp-for="Name" class="form-control" placeholder="Enter collection name" />
-                        <span asp-validation-for="Name" class="text-danger"></span>
+                        <label for="Name" class="form-label">Collection Name *</label>
+                        <input name="Name" id="Name" class="form-control" placeholder="Enter collection name" />
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="Summary" class="form-label">Summary (Year)</label>
-                        <input asp-for="Summary" class="form-control" placeholder="e.g., 2025" />
+                        <label for="Summary" class="form-label">Summary (Year)</label>
+                        <input name="Summary" id="Summary" class="form-control" placeholder="e.g., 2025" />
                     </div>
                 </div>
 
                 <div class="col-md-4">
                     <div class="mb-3">
-                        <label asp-for="LanguageID" class="form-label">Language *</label>
-                        <select asp-for="LanguageID" class="form-select">
+                        <label for="LanguageID" class="form-label">Language *</label>
+                        <select name="LanguageID" id="LanguageID" class="form-select">
                             <option value="">Select Language</option>
                             <option value="1">Turkish</option>
                             <option value="2">English</option>
                         </select>
-                        <span asp-validation-for="LanguageID" class="text-danger"></span>
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="Image" class="form-label">Collection Image</label>
-                        <input asp-for="Image" type="file" class="form-control" accept="image/jpeg" />
+                        <label for="Image" class="form-label">Collection Image</label>
+                        <input name="Image" id="Image" type="file" class="form-control" accept="image/jpeg" />
                         <div class="form-text">Only .jpg files are allowed</div>
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="StartDate" class="form-label">Start Date</label>
-                        <input asp-for="StartDate" type="datetime-local" class="form-control" />
+                        <label for="StartDate" class="form-label">Start Date</label>
+                        <input name="StartDate" id="StartDate" type="datetime-local" class="form-control" />
                         <div class="form-text">Leave empty for current date/time</div>
                     </div>
 
                     <div class="mb-3">
                         <div class="form-check">
-                            <input asp-for="IsActive" class="form-check-input" type="checkbox" checked />
-                            <label asp-for="IsActive" class="form-check-label">
+                            <input name="IsActive" id="IsActive" class="form-check-input" type="checkbox" value="true" checked />
+                            <input type="hidden" name="IsActive" value="false" />
+                            <label for="IsActive" class="form-check-label">
                                 Active
                             </label>
                         </div>

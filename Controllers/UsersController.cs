@@ -3,18 +3,20 @@ using Microsoft.AspNetCore.Authorization;
 using panelOrmo.Models;
 using panelOrmo.Services;
 using System.Security.Claims;
+using Microsoft.Extensions.Logging;
 
 namespace panelOrmo.Controllers
 {
     [Authorize]
     public class UsersController : Controller
     {
-
+        private readonly ILogger<UsersController> _logger;
         private readonly DatabaseService _databaseService;
 
-        public UsersController(DatabaseService databaseService)
+        public UsersController(DatabaseService databaseService, ILogger<UsersController> logger)
         {
             _databaseService = databaseService;
+            _logger = logger;
         }
 
         public async Task<IActionResult> Index()
@@ -41,27 +43,35 @@ namespace panelOrmo.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(UserCreateViewModel model)
         {
-            if (!User.HasClaim("IsSuperAdmin", "True"))
+            if (!User.HasClaim(c => c.Type == ClaimTypes.Role && c.Value == "SuperAdmin"))
             {
                 return Forbid();
             }
 
             if (!ModelState.IsValid)
+            {
+                foreach (var key in ModelState.Keys)
+                {
+                    var errors = ModelState[key].Errors;
+                    foreach (var error in errors)
+                    {
+                        // Removed debug log
+                    }
+                }
                 return View(model);
+            }
 
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-            var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "";
-
-            var success = await _databaseService.CreateUser(model, userId);
+            var success = await _databaseService.CreateUser(model, int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"));
             if (success)
             {
-                await _databaseService.LogActivity(userId, username, "Create User", "Users");
                 TempData["Success"] = "User created successfully";
                 return RedirectToAction("Index");
             }
-
-            ModelState.AddModelError("", "Failed to create user");
-            return View(model);
+            else
+            {
+                ModelState.AddModelError("", "Failed to create user. Please try again.");
+                return View(model);
+            }
         }
 
         [HttpPost]

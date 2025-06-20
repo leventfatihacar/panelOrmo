@@ -56,6 +56,52 @@ namespace panelOrmo.Controllers
             return View(model);
         }
 
+        public async Task<IActionResult> Edit(int id)
+        {
+            var collection = await _databaseService.GetCollectionById(id);
+            if (collection == null)
+            {
+                return NotFound();
+            }
+
+            var model = new CollectionViewModel
+            {
+                Name = collection.DName,
+                Summary = collection.DSummary,
+                LanguageID = collection.DLanguageID,
+                IsActive = collection.DIsValid
+            };
+            ViewBag.CurrentImageUrl = collection.DPicture;
+            return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Edit(int id, CollectionViewModel model)
+        {
+            if (!ModelState.IsValid)
+                return View(model);
+
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "";
+
+            string imagePath = null;
+            if (model.Image != null)
+            {
+                imagePath = await _ftpService.UploadFile(model.Image, "/httpdocs/CMSFiles/Image/Banner");
+            }
+
+            var success = await _databaseService.UpdateCollection(id, model, userId, imagePath);
+            if (success)
+            {
+                await _databaseService.LogActivity(userId, username, "Update Collection", "CMSBanner", id);
+                TempData["Success"] = "Collection updated successfully";
+                return RedirectToAction("Index");
+            }
+
+            ModelState.AddModelError("", "Failed to update collection");
+            return View(model);
+        }
+
         [HttpPost]
         public async Task<IActionResult> ToggleStatus([FromBody] ToggleStatusRequest request)
         {
@@ -69,6 +115,20 @@ namespace panelOrmo.Controllers
                 return Json(new { success = true });
             }
 
+            return Json(new { success = false });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Delete([FromBody] int id)
+        {
+            var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var username = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "";
+            var success = await _databaseService.DeleteCollection(id);
+            if (success)
+            {
+                await _databaseService.LogActivity(userId, username, "Delete Collection", "CMSBanner", id);
+                return Json(new { success = true });
+            }
             return Json(new { success = false });
         }
     }

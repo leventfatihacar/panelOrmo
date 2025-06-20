@@ -26,4 +26,11 @@ namespace panelOrmo.Models
         public IFormFile MediumImage { get; set; }
         public bool IsActive { get; set; } = true;
     }
+
+    public class CollectionProductEditViewModel
+    {
+        public CollectionProductViewModel Product { get; set; }
+        public string CurrentSmallImage { get; set; }
+        public string CurrentMediumImage { get; set; }
+    }
 }

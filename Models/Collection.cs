@@ -4,18 +4,15 @@ namespace panelOrmo.Models
 {
     public class Collection
     {
-        public int BID { get; set; }
-        public string BName { get; set; }
-        public string BTitle { get; set; }
-        public string BSummary { get; set; }
-        public string BImage { get; set; }
-        public int BLanguageID { get; set; }
-        public bool BIsValid { get; set; }
-        public DateTime BDate { get; set; }
-        public DateTime BDate2 { get; set; }
-        public DateTime BCreatedDate { get; set; }
-        public int? BCreatedUserID { get; set; }
-        public int BOrder { get; set; }
+        public int DID { get; set; }
+        public string DName { get; set; }
+        public string DSummary { get; set; }
+        public string DPicture { get; set; }
+        public int DLanguageID { get; set; }
+        public bool DIsValid { get; set; }
+        public DateTime DCreatedDate { get; set; }
+        public int? DCreatedUserID { get; set; }
+        public int DOrder { get; set; }
     }
 
     public class CollectionViewModel
@@ -26,7 +23,6 @@ namespace panelOrmo.Models
         [Required]
         public int LanguageID { get; set; }
         public IFormFile Image { get; set; }
-        public DateTime? StartDate { get; set; }
         public bool IsActive { get; set; } = true;
     }
 }
