@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using panelOrmo.Models;
 using panelOrmo.Services;
-using System.Security.Claims;
+using System.Security.Claims; 
 
 namespace panelOrmo.Controllers
 {
@@ -10,11 +10,13 @@ namespace panelOrmo.Controllers
     {
         private readonly DatabaseService _databaseService;
         private readonly FTPService _ftpService;
+        private readonly ILogger<CollectionProductsController> _logger;
 
-        public CollectionProductsController(DatabaseService databaseService, FTPService ftpService)
+        public CollectionProductsController(DatabaseService databaseService, FTPService ftpService, ILogger<CollectionProductsController> logger)
         {
             _databaseService = databaseService;
             _ftpService = ftpService;
+            _logger = logger;
         }
 
         public async Task<IActionResult> Index()
@@ -75,15 +77,43 @@ namespace panelOrmo.Controllers
                 return View(model);
             }
 
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-            var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "";
-
-            var success = await _databaseService.UpdateCollectionProduct(id, model.Product, userId);
-            if (success)
+            if (model.Product?.SmallImage != null)
             {
-                await _databaseService.LogActivity(userId, username, "Update Collection Product", "CMSProduct", id);
-                TempData["Success"] = "Collection product updated successfully";
-                return RedirectToAction("Index");
+                    model.Product.SmallImage.FileName, model.Product.SmallImage.Length);
+            }
+
+            if (model.Product?.MediumImage != null)
+            {
+                    model.Product.MediumImage.FileName, model.Product.MediumImage.Length);
+            }
+
+            // Extract user information
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var usernameClaim = User.FindFirst(ClaimTypes.Name)?.Value;
+
+            var userId = int.Parse(userIdClaim ?? "0");
+            var username = usernameClaim ?? "";
+
+            try
+            {
+                var success = await _databaseService.UpdateCollectionProduct(id, model.Product, userId);
+
+                if (success)
+                {
+                    await _databaseService.LogActivity(userId, username, "Update Collection Product", "CMSProduct", id);
+
+                    TempData["Success"] = "Collection product updated successfully";
+                    return RedirectToAction("Index");
+                }
+                else
+                {
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception occurred during UpdateCollectionProduct");
+                _logger.LogError("Exception details: {Message}", ex.Message);
+                _logger.LogError("Stack trace: {StackTrace}", ex.StackTrace);
             }
 
             ViewBag.CollectionGroups = await _databaseService.GetAllCollectionGroups();

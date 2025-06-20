@@ -12,27 +12,37 @@
             <div class="col-md-8">
                 <div class="mb-3">
                     <label for="Product_ProductCode" class="form-label">Product Code *</label>
-                    <input name="Product.ProductCode" id="Product_ProductCode" class="form-control" placeholder="Enter product code" value="@Model.Product.ProductCode" />
+                    <input name="Product.ProductCode" id="Product_ProductCode" class="form-control" placeholder="Enter product code" value="@Model.Product.ProductCode" required />
+                    <span asp-validation-for="Product.ProductCode" class="text-danger"></span>
                 </div>
 
                 <div class="mb-3">
                     <label for="Product_CollectionGroupID" class="form-label">Collection Group *</label>
-                    <select name="Product.CollectionGroupID" id="Product_CollectionGroupID" class="form-select">
+                    <select name="Product.CollectionGroupID" id="Product_CollectionGroupID" class="form-select" required>
                         <option value="">Select Collection Group</option>
                         @if (collectionGroups != null)
                         {
                             @foreach (var group in collectionGroups)
                             {
-                                <option value="@group.DID" selected="@(Model.Product.CollectionGroupID == group.DID)">@group.DName</option>
+                                @if (Model.Product.CollectionGroupID == group.DID)
+                                {
+                                    <option value="@group.DID" selected>@group.DName</option>
+                                }
+                                else
+                                {
+                                    <option value="@group.DID">@group.DName</option>
+                                }
                             }
                         }
                     </select>
+                    <span asp-validation-for="Product.CollectionGroupID" class="text-danger"></span>
                 </div>
 
                 <div class="mb-3">
                     <label for="Product_Content" class="form-label">Product Content *</label>
-                    <textarea name="Product.Content" id="Product_Content" class="form-control" rows="5" placeholder="Enter product details and ingredients">@Model.Product.Content</textarea>
+                    <textarea name="Product.Content" id="Product_Content" class="form-control" rows="5" placeholder="Enter product details and ingredients" required>@Model.Product.Content</textarea>
                     <div class="form-text">Content will be automatically wrapped in &lt;p&gt; tags</div>
+                    <span asp-validation-for="Product.Content" class="text-danger"></span>
                 </div>
             </div>
 
@@ -64,7 +74,15 @@
                 </div>
 
                 <div class="form-check mb-3">
-                    <input name="Product.IsActive" id="Product_IsActive" class="form-check-input" type="checkbox" value="true" checked="@Model.Product.IsActive" />
+                    @if (Model.Product.IsActive)
+                    {
+                        <input name="Product.IsActive" id="Product_IsActive" class="form-check-input" type="checkbox" value="true" checked />
+                    }
+                    else
+                    {
+                        <input name="Product.IsActive" id="Product_IsActive" class="form-check-input" type="checkbox" value="true" />
+                    }
+                    <input type="hidden" name="Product.IsActive" value="false" />
                     <label for="Product_IsActive" class="form-check-label">Active</label>
                 </div>
             </div>
@@ -75,4 +93,36 @@
             <a href="/CollectionProducts/Index" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
-</div> 
+</div>
+
+@section Scripts {
+    <script>
+        // Debug form submission
+        document.querySelector('form').addEventListener('submit', function(e) {
+            console.log('Form submission debug:');
+
+            const formData = new FormData(this);
+            for (let [key, value] of formData.entries()) {
+                console.log(`${key}: ${value}`);
+            }
+
+            // Specific check for CollectionGroupID
+            const groupSelect = document.getElementById('Product_CollectionGroupID');
+            console.log('CollectionGroupID element value:', groupSelect.value);
+            console.log('CollectionGroupID selected index:', groupSelect.selectedIndex);
+            console.log('CollectionGroupID selected option text:', groupSelect.options[groupSelect.selectedIndex]?.text);
+
+            // Validate required fields
+            if (!groupSelect.value) {
+                alert('Please select a Collection Group');
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        // Debug dropdown change
+        document.getElementById('Product_CollectionGroupID').addEventListener('change', function() {
+            console.log('CollectionGroupID changed to:', this.value);
+        });
+    </script>
+}
