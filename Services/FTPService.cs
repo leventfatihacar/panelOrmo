@@ -41,5 +41,46 @@ namespace panelOrmo.Services
                 return null;
             }
         }
+        public async Task<byte[]?> DownloadFile(string filePath)
+        {
+            try
+            {
+                var ftpPath = $"ftp://{_ftpHost}{filePath}";
+
+                var request = (FtpWebRequest)WebRequest.Create(ftpPath);
+                request.Method = WebRequestMethods.Ftp.DownloadFile;
+                request.Credentials = new NetworkCredential(_ftpUsername, _ftpPassword);
+
+                using var response = (FtpWebResponse)await request.GetResponseAsync();
+                using var stream = response.GetResponseStream();
+                using var memoryStream = new MemoryStream();
+
+                await stream.CopyToAsync(memoryStream);
+                return memoryStream.ToArray();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        public async Task<bool> FileExists(string filePath)
+        {
+            try
+            {
+                var ftpPath = $"ftp://{_ftpHost}{filePath}";
+
+                var request = (FtpWebRequest)WebRequest.Create(ftpPath);
+                request.Method = WebRequestMethods.Ftp.GetFileSize;
+                request.Credentials = new NetworkCredential(_ftpUsername, _ftpPassword);
+
+                using var response = (FtpWebResponse)await request.GetResponseAsync();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 }

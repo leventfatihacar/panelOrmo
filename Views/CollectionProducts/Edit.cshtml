@@ -171,19 +171,62 @@
         }
 
     .existing-image-thumbnail {
-        width: 50px;
-        height: 50px;
+        width: 60px;
+        height: 60px;
         object-fit: cover;
-        border-radius: 6px;
-        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        border: 2px solid #dee2e6;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: all 0.2s ease;
     }
+
+        .existing-image-thumbnail:hover {
+            transform: scale(1.05);
+            border-color: #007bff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
 
     .image-preview-container {
         background: white;
-        border-radius: 6px;
-        padding: 12px;
+        border-radius: 8px;
+        padding: 15px;
         border: 1px solid #e9ecef;
-        margin-bottom: 12px;
+        margin-bottom: 15px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .image-preview-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        align-items: start;
+    }
+
+    .image-preview-item {
+        text-align: center;
+    }
+
+    .image-preview-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .no-image-placeholder {
+        width: 60px;
+        height: 60px;
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+        font-size: 1.2rem;
     }
 
     .section-divider {
@@ -196,6 +239,10 @@
         background: #f8d7da !important;
         border-color: #dc3545 !important;
     }
+
+        .marked-for-deletion .existing-image-thumbnail {
+            filter: grayscale(100%) brightness(0.7);
+        }
 
     .restore-btn {
         background: #28a745;
@@ -214,6 +261,26 @@
         .restore-btn:hover {
             background: #1e7e34;
         }
+
+    .replace-section {
+        border-top: 1px solid #e9ecef;
+        padding-top: 12px;
+        margin-top: 12px;
+    }
+
+    .replace-section .image-input-label {
+        min-height: 50px;
+        padding: 10px;
+    }
+
+    .image-count-badge {
+        background: #007bff;
+        color: white;
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-weight: 600;
+    }
 </style>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -264,7 +331,13 @@
         <div class="col-md-4">
             <div class="card image-upload-section">
                 <div class="upload-header">
-                    <h6>Product Images</h6>
+                    <h6>
+                        Product Images 
+                        @if (existingImages.Any())
+                        {
+                            <span class="image-count-badge">@existingImages.Count</span>
+                        }
+                    </h6>
                     <button type="button" class="add-image-btn" onclick="addImagePair()">
                         <i class="fas fa-plus me-1"></i>Add Pair
                     </button>
@@ -274,7 +347,10 @@
                     @if (existingImages.Any())
                     {
                         <div class="mb-3">
-                            <h6 class="text-muted mb-2"><i class="fas fa-folder-open me-1"></i>Existing Images</h6>
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-folder-open me-1"></i>
+                                Existing Images (@existingImages.Count)
+                            </h6>
                             <div id="existingImagesContainer">
                                 @for (int i = 0; i < existingImages.Count; i++)
                                 {
@@ -288,28 +364,46 @@
 
                                         <!-- Current Images Preview -->
                                         <div class="image-preview-container">
-                                            <div class="row g-2">
-                                                @if (!string.IsNullOrEmpty(existingImages[i].PISmallImage))
-                                                {
-                                                    <div class="col-6 text-center">
-                                                        <small class="text-muted d-block mb-1">Small</small>
-                                                        <img src="@existingImages[i].PISmallImage" class="existing-image-thumbnail" alt="Small image">
-                                                    </div>
-                                                }
-                                                @if (!string.IsNullOrEmpty(existingImages[i].PIMediumImage))
-                                                {
-                                                    <div class="col-6 text-center">
-                                                        <small class="text-muted d-block mb-1">Medium</small>
-                                                        <img src="@existingImages[i].PIMediumImage" class="existing-image-thumbnail" alt="Medium image">
-                                                    </div>
-                                                }
+                                            <div class="image-preview-grid">
+                                                <div class="image-preview-item">
+                                                    <span class="image-preview-label">Small Image</span>
+                                                    @if (!string.IsNullOrEmpty(existingImages[i].PISmallImage))
+                                                    {
+                                                        var smallImageUrl = existingImages[i].PISmallImage.StartsWith("/Image/") 
+                                                            ? existingImages[i].PISmallImage
+                                                            : $"/Image/small/{existingImages[i].PISmallImage}";
+                                                        <img src="@smallImageUrl" class="existing-image-thumbnail" alt="Small image" title="Click to view full size" onclick="viewFullImage('@smallImageUrl', 'Small Image')">
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="no-image-placeholder">
+                                                            <i class="fas fa-image"></i>
+                                                        </div>
+                                                    }
+                                                </div>
+                                                <div class="image-preview-item">
+                                                    <span class="image-preview-label">Medium Image</span>
+                                                    @if (!string.IsNullOrEmpty(existingImages[i].PIMediumImage))
+                                                    {
+                                                        var mediumImageUrl = existingImages[i].PIMediumImage.StartsWith("/Image/")
+                                                        ? existingImages[i].PIMediumImage
+                                                        : $"/Image/medium/{existingImages[i].PIMediumImage}";
+                                                        <img src="@mediumImageUrl" class="existing-image-thumbnail" alt="Medium image" title="Click to view full size" onclick="viewFullImage('@mediumImageUrl', 'Medium Image')">
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="no-image-placeholder">
+                                                            <i class="fas fa-image"></i>
+                                                        </div>
+                                                    }
+                                                </div>
                                             </div>
                                         </div>
 
                                         <!-- Replace Options -->
                                         <div class="replace-section">
                                             <div class="image-input-group">
-                                                <label class="image-input-label" style="min-height: 50px; padding: 10px;">
+                                                <label class="image-input-label">
                                                     <i class="fas fa-sync-alt"></i>
                                                     <span class="small">Replace Small</span>
                                                     <input name="ExistingImages[@i].NewSmallImage" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />
@@ -317,7 +411,7 @@
                                                 </label>
                                             </div>
                                             <div class="image-input-group">
-                                                <label class="image-input-label" style="min-height: 50px; padding: 10px;">
+                                                <label class="image-input-label">
                                                     <i class="fas fa-sync-alt"></i>
                                                     <span class="small">Replace Medium</span>
                                                     <input name="ExistingImages[@i].NewMediumImage" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />
@@ -326,6 +420,17 @@
                                         </div>
                                     </div>
                                 }
+                            </div>
+                            <div class="section-divider"></div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="mb-3">
+                            <div class="text-center py-3">
+                                <i class="fas fa-images fa-2x text-muted mb-2"></i>
+                                <p class="text-muted mb-0">No existing images found</p>
+                                <small class="text-muted">Add new image pairs below</small>
                             </div>
                             <div class="section-divider"></div>
                         </div>
@@ -377,6 +482,21 @@
         <a href="/CollectionProducts/Index" class="btn btn-secondary">Cancel</a>
     </div>
 </form>
+
+<!-- Image Preview Modal -->
+<div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-labelledby="imagePreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imagePreviewModalLabel">Image Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="previewImage" src="" class="img-fluid" alt="Preview" style="max-height: 500px;">
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
     let imagePairIndex = 1;
@@ -521,5 +641,12 @@
                 icon.className = 'fas fa-image';
             }
         }
+    }
+
+    function viewFullImage(imageSrc, imageType) {
+        document.getElementById('previewImage').src = imageSrc;
+        document.getElementById('imagePreviewModalLabel').textContent = imageType + ' - Full Size';
+        const modal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
+        modal.show();
     }
 </script>
