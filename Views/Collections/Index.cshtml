@@ -120,191 +120,94 @@
     </div>
 </div>
 
-<!-- Collections Grid/Table Toggle -->
+<!-- Collections List -->
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">
             <i class="fas fa-list me-2"></i>Collections List
         </h5>
         <div class="d-flex gap-2">
-            <div class="btn-group" role="group">
-                <input type="radio" class="btn-check" name="viewMode" id="gridView" checked>
-                <label class="btn btn-outline-secondary btn-sm" for="gridView">
-                    <i class="fas fa-th-large"></i> Grid
-                </label>
-                <input type="radio" class="btn-check" name="viewMode" id="tableView">
-                <label class="btn btn-outline-secondary btn-sm" for="tableView">
-                    <i class="fas fa-list"></i> Table
-                </label>
-            </div>
             <button class="btn btn-outline-primary btn-sm" onclick="location.reload()">
                 <i class="fas fa-sync-alt me-1"></i>Refresh
             </button>
         </div>
     </div>
     <div class="card-body p-0">
-        <!-- Grid View -->
-        <div id="gridViewContent" class="p-3">
-            <div class="row" id="collectionsGrid">
-                @foreach (var collection in Model)
-                {
-                    <div class="col-md-4 mb-3" data-language="@collection.DLanguageID" data-status="@collection.DIsValid.ToString().ToLower()">
-                        <div class="card h-100 collection-card">
-                            @if (!string.IsNullOrEmpty(collection.DPicture))
-                            {
-                                <img src="@collection.DPicture" class="card-img-top" alt="Collection image" style="height: 200px; object-fit: cover;">
-                            }
-                            else
-                            {
-                                <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
-                                    <i class="fas fa-image fa-3x text-muted"></i>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="collectionsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th width="80">ID</th>
+                        <th>Name</th>
+                        <th>Summary</th>
+                        <th width="120">Language</th>
+                        <th width="120">Status</th>
+                        <th width="150">Created Date</th>
+                        <th width="180" class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var collection in Model)
+                    {
+                        <tr data-language="@collection.DLanguageID" data-status="@collection.DIsValid.ToString().ToLower()">
+                            <td class="fw-bold text-success">#@collection.DID</td>
+                            <td>
+                                <div class="fw-bold">@collection.DName</div>
+                            </td>
+                            <td>@collection.DSummary</td>
+                            <td>
+                                @if (collection.DLanguageID == 1)
+                                {
+                                    <span class="badge bg-primary">
+                                        <i class="fas fa-flag me-1"></i>Turkish
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-flag me-1"></i>English
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                @if (collection.DIsValid)
+                                {
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check me-1"></i>Active
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-times me-1"></i>Inactive
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                <div class="small">
+                                    <div><i class="fas fa-calendar me-1"></i>@collection.DCreatedDate.ToString("dd/MM/yyyy")</div>
+                                    <div class="text-muted"><i class="fas fa-clock me-1"></i>@collection.DCreatedDate.ToString("HH:mm")</div>
                                 </div>
-                            }
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h5 class="card-title mb-0">@collection.DName</h5>
-                                    @if (collection.DLanguageID == 1)
-                                    {
-                                        <span class="badge bg-primary">🇹🇷 TR</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-success">🇺🇸 EN</span>
-                                    }
-                                </div>
-                                <p class="card-text text-muted small">@collection.DSummary</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    @if (collection.DIsValid)
-                                    {
-                                        <span class="badge bg-success">
-                                            <i class="fas fa-check me-1"></i>Active
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-danger">
-                                            <i class="fas fa-times me-1"></i>Inactive
-                                        </span>
-                                    }
-                                    <small class="text-muted">
-                                        <i class="fas fa-calendar me-1"></i>
-                                        @collection.DCreatedDate.ToString("dd/MM/yyyy")
-                                    </small>
-                                </div>
-                            </div>
-                            <div class="card-footer bg-transparent">
-                                <div class="btn-group w-100" role="group">
-                                    <a href="/Collections/Edit/@collection.DID" class="btn btn-outline-primary btn-sm">
-                                        <i class="fas fa-edit"></i> Edit
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="/Collections/Edit/@collection.DID" class="btn btn-outline-primary" title="Edit">
+                                        <i class="fas fa-edit"></i>
                                     </a>
-                                    <button class="btn btn-outline-@(collection.DIsValid ? "warning" : "success") btn-sm"
-                                            onclick="toggleCollectionStatus(@collection.DID, @collection.DIsValid.ToString().ToLower())">
+                                    <button class="btn btn-outline-@(collection.DIsValid ? "warning" : "success")"
+                                            onclick="toggleCollectionStatus(@collection.DID, @collection.DIsValid.ToString().ToLower())"
+                                            title="@(collection.DIsValid ? "Deactivate" : "Activate")">
                                         <i class="fas fa-toggle-@(collection.DIsValid ? "on" : "off")"></i>
-                                        @(collection.DIsValid ? "Disable" : "Enable")
                                     </button>
-                                    <button class="btn btn-outline-danger btn-sm" onclick="deleteCollection(@collection.DID)">
-                                        <i class="fas fa-trash"></i> Delete
+                                    <button class="btn btn-outline-danger" onclick="deleteCollection(@collection.DID)" title="Delete">
+                                        <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                }
-            </div>
-        </div>
-
-        <!-- Table View -->
-        <div id="tableViewContent" style="display: none;">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0" id="collectionsTable">
-                    <thead class="table-light">
-                        <tr>
-                            <th width="80">ID</th>
-                            <th>Name</th>
-                            <th>Summary</th>
-                            <th width="120">Language</th>
-                            <th width="120">Status</th>
-                            <th width="150">Created Date</th>
-                            <th width="180" class="text-center">Actions</th>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var collection in Model)
-                        {
-                            <tr data-language="@collection.DLanguageID" data-status="@collection.DIsValid.ToString().ToLower()">
-                                <td class="fw-bold text-success">#@collection.DID</td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        @if (!string.IsNullOrEmpty(collection.DPicture))
-                                        {
-                                            <img src="@collection.DPicture" alt="Collection image" class="me-2" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px;">
-                                        }
-                                        else
-                                        {
-                                            <div class="me-2 bg-light d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border-radius: 6px;">
-                                                <i class="fas fa-image text-muted"></i>
-                                            </div>
-                                        }
-                                        <div>
-                                            <div class="fw-bold">@collection.DName</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>@collection.DSummary</td>
-                                <td>
-                                    @if (collection.DLanguageID == 1)
-                                    {
-                                        <span class="badge bg-primary">
-                                            <i class="fas fa-flag me-1"></i>Turkish
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-success">
-                                            <i class="fas fa-flag me-1"></i>English
-                                        </span>
-                                    }
-                                </td>
-                                <td>
-                                    @if (collection.DIsValid)
-                                    {
-                                        <span class="badge bg-success">
-                                            <i class="fas fa-check me-1"></i>Active
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-danger">
-                                            <i class="fas fa-times me-1"></i>Inactive
-                                        </span>
-                                    }
-                                </td>
-                                <td>
-                                    <div class="small">
-                                        <div><i class="fas fa-calendar me-1"></i>@collection.DCreatedDate.ToString("dd/MM/yyyy")</div>
-                                        <div class="text-muted"><i class="fas fa-clock me-1"></i>@collection.DCreatedDate.ToString("HH:mm")</div>
-                                    </div>
-                                </td>
-                                <td class="text-center">
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="/Collections/Edit/@collection.DID" class="btn btn-outline-primary" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <button class="btn btn-outline-@(collection.DIsValid ? "warning" : "success")"
-                                                onclick="toggleCollectionStatus(@collection.DID, @collection.DIsValid.ToString().ToLower())"
-                                                title="@(collection.DIsValid ? "Deactivate" : "Activate")">
-                                            <i class="fas fa-toggle-@(collection.DIsValid ? "on" : "off")"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger" onclick="deleteCollection(@collection.DID)" title="Delete">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+                    }
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -325,21 +228,6 @@
 
 @section Scripts {
     <script>
-        // View mode toggle
-        document.getElementById('gridView').addEventListener('change', function() {
-            if (this.checked) {
-                document.getElementById('gridViewContent').style.display = 'block';
-                document.getElementById('tableViewContent').style.display = 'none';
-            }
-        });
-
-        document.getElementById('tableView').addEventListener('change', function() {
-            if (this.checked) {
-                document.getElementById('gridViewContent').style.display = 'none';
-                document.getElementById('tableViewContent').style.display = 'block';
-            }
-        });
-
         function toggleCollectionStatus(id, currentStatus) {
             if (confirm('Are you sure you want to change the status of this collection?')) {
                 fetch('/Collections/ToggleStatus', {
@@ -398,24 +286,6 @@
             const languageValue = document.getElementById('languageFilter').value;
             const statusValue = document.getElementById('statusFilter').value;
 
-            // Filter grid view
-            const gridItems = document.querySelectorAll('#collectionsGrid > div');
-            gridItems.forEach(item => {
-                const text = item.textContent.toLowerCase();
-                const language = item.getAttribute('data-language');
-                const status = item.getAttribute('data-status');
-
-                const matchesSearch = text.includes(searchValue);
-                const matchesLanguage = !languageValue || language === languageValue;
-                const matchesStatus = !statusValue || status === statusValue;
-
-                if (matchesSearch && matchesLanguage && matchesStatus) {
-                    item.style.display = '';
-                } else {
-                    item.style.display = 'none';
-                }
-            });
-
             // Filter table view
             const tableRows = document.querySelectorAll('#collectionsTable tbody tr');
             tableRows.forEach(row => {
@@ -441,21 +311,5 @@
             document.getElementById('statusFilter').value = '';
             filterCollections();
         }
-
-        // Collection card hover effects
-        document.addEventListener('DOMContentLoaded', function() {
-            const cards = document.querySelectorAll('.collection-card');
-            cards.forEach(card => {
-                card.addEventListener('mouseenter', function() {
-                    this.style.transform = 'translateY(-5px)';
-                    this.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
-                });
-
-                card.addEventListener('mouseleave', function() {
-                    this.style.transform = 'translateY(0)';
-                    this.style.boxShadow = '';
-                });
-            });
-        });
     </script>
 }

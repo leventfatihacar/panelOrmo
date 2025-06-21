@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using panelOrmo.Models;
 using panelOrmo.Services;
 using System.Security.Claims;
+using System.Linq;
 
 namespace panelOrmo.Controllers
 {
@@ -21,7 +22,7 @@ namespace panelOrmo.Controllers
         public async Task<IActionResult> Index()
         {
             var collections = await _databaseService.GetAllCollections();
-            return View(collections);
+            return View(collections.OrderByDescending(c => c.DCreatedDate).ToList());
         }
 
         public IActionResult Create()

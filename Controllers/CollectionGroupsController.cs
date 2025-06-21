@@ -3,7 +3,7 @@ using panelOrmo.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-
+using System.Linq;
 
 namespace panelOrmo.Controllers
 {
@@ -22,7 +22,21 @@ namespace panelOrmo.Controllers
         public async Task<IActionResult> Index()
         {
             var groups = await _databaseService.GetAllCollectionGroups();
-            return View(groups);
+            var collections = await _databaseService.GetAllCollections();
+
+            var viewModel = from g in groups
+                            join c in collections on g.DParentID equals c.DID
+                            select new CollectionGroupIndexViewModel
+                            {
+                                DID = g.DID,
+                                DName = g.DName,
+                                ParentCollectionName = c.DName,
+                                DLanguageID = g.DLanguageID,
+                                DIsValid = g.DIsValid,
+                                DCreatedDate = g.DCreatedDate
+                            };
+
+            return View(viewModel.OrderByDescending(g => g.DCreatedDate).ToList());
         }
 
         public async Task<IActionResult> Create()

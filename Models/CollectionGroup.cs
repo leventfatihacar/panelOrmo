@@ -26,4 +26,14 @@ namespace panelOrmo.Models
         public IFormFile? Image { get; set; }
         public bool IsActive { get; set; } = true;
     }
+
+    public class CollectionGroupIndexViewModel
+    {
+        public int DID { get; set; }
+        public string DName { get; set; }
+        public string ParentCollectionName { get; set; }
+        public int DLanguageID { get; set; }
+        public bool DIsValid { get; set; }
+        public DateTime DCreatedDate { get; set; }
+    }
 }

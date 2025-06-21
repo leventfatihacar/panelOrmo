@@ -160,22 +160,8 @@
                         <tr data-language="@news.CLanguageID" data-status="@news.CIsValid.ToString().ToLower()">
                             <td class="fw-bold text-primary">#@news.CID</td>
                             <td>
-                                <div class="d-flex align-items-center">
-                                    @if (!string.IsNullOrEmpty(news.CImage))
-                                    {
-                                        <img src="@news.CImage" alt="Article image" class="me-2" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px;">
-                                    }
-                                    else
-                                    {
-                                        <div class="me-2 bg-light d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border-radius: 6px;">
-                                            <i class="fas fa-image text-muted"></i>
-                                        </div>
-                                    }
-                                    <div>
-                                        <div class="fw-bold">@news.CTitle</div>
-                                        <small class="text-muted">@(news.CContent.Length > 50 ? news.CContent.Substring(0, 50) + "..." : news.CContent)</small>
-                                    </div>
-                                </div>
+                                <div class="fw-bold">@news.CTitle</div>
+                                <small class="text-muted">@(news.CContent.Length > 50 ? news.CContent.Substring(0, 50) + "..." : news.CContent)</small>
                             </td>
                             <td>
                                 @if (news.CLanguageID == 1)

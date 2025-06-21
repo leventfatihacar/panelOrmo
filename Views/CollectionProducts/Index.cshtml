@@ -116,186 +116,94 @@
     </div>
 </div>
 
-<!-- Products Grid/Table Toggle -->
+<!-- Products List -->
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">
             <i class="fas fa-list me-2"></i>Collection Products List
         </h5>
         <div class="d-flex gap-2">
-            <div class="btn-group" role="group">
-                <input type="radio" class="btn-check" name="viewMode" id="gridView" checked>
-                <label class="btn btn-outline-secondary btn-sm" for="gridView">
-                    <i class="fas fa-th-large"></i> Grid
-                </label>
-                <input type="radio" class="btn-check" name="viewMode" id="tableView">
-                <label class="btn btn-outline-secondary btn-sm" for="tableView">
-                    <i class="fas fa-list"></i> Table
-                </label>
-            </div>
             <button class="btn btn-outline-primary btn-sm" onclick="location.reload()">
                 <i class="fas fa-sync-alt me-1"></i>Refresh
             </button>
         </div>
     </div>
     <div class="card-body p-0">
-        <!-- Grid View -->
-        <div id="gridViewContent" class="p-3">
-            <div class="row" id="productsGrid">
-                @foreach (var product in Model)
-                {
-                    <div class="col-md-4 mb-3" data-code="@product.PCode" data-status="@product.PIsValid.ToString().ToLower()">
-                        <div class="card h-100 product-card">
-                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center position-relative" style="height: 180px;">
-                                <i class="fas fa-box fa-3x text-muted"></i>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="productsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th width="80">ID</th>
+                        <th width="120">Product Code</th>
+                        <th>Name</th>
+                        <th width="120">Status</th>
+                        <th width="150">Created Date</th>
+                        <th width="180" class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var product in Model)
+                    {
+                        <tr data-code="@product.PCode" data-status="@product.PIsValid.ToString().ToLower()">
+                            <td class="fw-bold text-info">#@product.PID</td>
+                            <td>
                                 @if (!string.IsNullOrEmpty(product.PCode))
                                 {
-                                    <span class="badge bg-primary position-absolute top-0 start-0 m-2">
+                                    <span class="badge bg-primary">
                                         <i class="fas fa-barcode me-1"></i>@product.PCode
                                     </span>
                                 }
-                            </div>
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h5 class="card-title mb-0">@product.PName</h5>
-                                    @if (product.PIsValid)
-                                    {
-                                        <span class="badge bg-success">Active</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-danger">Inactive</span>
-                                    }
+                                else
+                                {
+                                    <span class="text-muted">No Code</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="fw-bold">@product.PName</div>
+                                @if (!string.IsNullOrEmpty(product.PInfoPreview))
+                                {
+                                    <small class="text-muted">@(product.PInfoPreview.Length > 50 ? product.PInfoPreview.Substring(0, 50) + "..." : product.PInfoPreview)</small>
+                                }
+                            </td>
+                            <td>
+                                @if (product.PIsValid)
+                                {
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check me-1"></i>Active
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-times me-1"></i>Inactive
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                <div class="small">
+                                    <div><i class="fas fa-calendar me-1"></i>@product.PCreatedDate.ToString("dd/MM/yyyy")</div>
+                                    <div class="text-muted"><i class="fas fa-clock me-1"></i>@product.PCreatedDate.ToString("HH:mm")</div>
                                 </div>
-                                <p class="card-text text-muted small">
-                                    @if (!string.IsNullOrEmpty(product.PInfoPreview))
-                                    {
-                                        @(product.PInfoPreview.Length > 80 ? product.PInfoPreview.Substring(0, 80) + "..." : product.PInfoPreview)
-                                    }
-                                    else
-                                    {
-                                        <em>No preview available</em>
-                                    }
-                                </p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted">
-                                        <i class="fas fa-calendar me-1"></i>
-                                        @product.PCreatedDate.ToString("dd/MM/yyyy")
-                                    </small>
-                                    <small class="text-muted">
-                                        ID: @product.PID
-                                    </small>
-                                </div>
-                            </div>
-                            <div class="card-footer bg-transparent">
-                                <div class="btn-group w-100" role="group">
-                                    <a href="/CollectionProducts/Edit/@product.PID" class="btn btn-outline-primary btn-sm">
-                                        <i class="fas fa-edit"></i> Edit
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="/CollectionProducts/Edit/@product.PID" class="btn btn-outline-primary" title="Edit">
+                                        <i class="fas fa-edit"></i>
                                     </a>
-                                    <button class="btn btn-outline-@(product.PIsValid ? "warning" : "success") btn-sm"
-                                            onclick="toggleProductStatus(@product.PID, @product.PIsValid.ToString().ToLower())">
+                                    <button class="btn btn-outline-@(product.PIsValid ? "warning" : "success")"
+                                            onclick="toggleProductStatus(@product.PID, @product.PIsValid.ToString().ToLower())"
+                                            title="@(product.PIsValid ? "Deactivate" : "Activate")">
                                         <i class="fas fa-toggle-@(product.PIsValid ? "on" : "off")"></i>
-                                        @(product.PIsValid ? "Disable" : "Enable")
                                     </button>
-                                    <button class="btn btn-outline-danger btn-sm" onclick="deleteProduct(@product.PID)">
-                                        <i class="fas fa-trash"></i> Delete
+                                    <button class="btn btn-outline-danger" onclick="deleteProduct(@product.PID)" title="Delete">
+                                        <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                }
-            </div>
-        </div>
-
-        <!-- Table View -->
-        <div id="tableViewContent" style="display: none;">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0" id="productsTable">
-                    <thead class="table-light">
-                        <tr>
-                            <th width="80">ID</th>
-                            <th width="120">Product Code</th>
-                            <th>Name</th>
-                            <th width="120">Status</th>
-                            <th width="150">Created Date</th>
-                            <th width="180" class="text-center">Actions</th>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var product in Model)
-                        {
-                            <tr data-code="@product.PCode" data-status="@product.PIsValid.ToString().ToLower()">
-                                <td class="fw-bold text-info">#@product.PID</td>
-                                <td>
-                                    @if (!string.IsNullOrEmpty(product.PCode))
-                                    {
-                                        <span class="badge bg-primary">
-                                            <i class="fas fa-barcode me-1"></i>@product.PCode
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">No Code</span>
-                                    }
-                                </td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="me-2 bg-light d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border-radius: 6px;">
-                                            <i class="fas fa-box text-muted"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-bold">@product.PName</div>
-                                            @if (!string.IsNullOrEmpty(product.PInfoPreview))
-                                            {
-                                                <small class="text-muted">@(product.PInfoPreview.Length > 50 ? product.PInfoPreview.Substring(0, 50) + "..." : product.PInfoPreview)</small>
-                                            }
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    @if (product.PIsValid)
-                                    {
-                                        <span class="badge bg-success">
-                                            <i class="fas fa-check me-1"></i>Active
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-danger">
-                                            <i class="fas fa-times me-1"></i>Inactive
-                                        </span>
-                                    }
-                                </td>
-                                <td>
-                                    <div class="small">
-                                        <div><i class="fas fa-calendar me-1"></i>@product.PCreatedDate.ToString("dd/MM/yyyy")</div>
-                                        <div class="text-muted"><i class="fas fa-clock me-1"></i>@product.PCreatedDate.ToString("HH:mm")</div>
-                                    </div>
-                                </td>
-                                <td class="text-center">
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="/CollectionProducts/Edit/@product.PID" class="btn btn-outline-primary" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <button class="btn btn-outline-info" onclick="viewProduct(@product.PID)" title="View">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="btn btn-outline-@(product.PIsValid ? "warning" : "success")"
-                                                onclick="toggleProductStatus(@product.PID, @product.PIsValid.ToString().ToLower())"
-                                                title="@(product.PIsValid ? "Deactivate" : "Activate")">
-                                            <i class="fas fa-toggle-@(product.PIsValid ? "on" : "off")"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger" onclick="deleteProduct(@product.PID)" title="Delete">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+                    }
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -316,21 +224,6 @@
 
 @section Scripts {
     <script>
-        // View mode toggle
-        document.getElementById('gridView').addEventListener('change', function() {
-            if (this.checked) {
-                document.getElementById('gridViewContent').style.display = 'block';
-                document.getElementById('tableViewContent').style.display = 'none';
-            }
-        });
-
-        document.getElementById('tableView').addEventListener('change', function() {
-            if (this.checked) {
-                document.getElementById('gridViewContent').style.display = 'none';
-                document.getElementById('tableViewContent').style.display = 'block';
-            }
-        });
-
         function toggleProductStatus(id, currentStatus) {
             if (confirm('Are you sure you want to change the status of this collection product?')) {
                 // Add toggle functionality here
@@ -362,11 +255,6 @@
             }
         }
 
-        function viewProduct(id) {
-            // Add view functionality here
-            window.open('/CollectionProducts/Details/' + id, '_blank');
-        }
-
         // Search and filter functionality
         document.getElementById('searchInput').addEventListener('keyup', filterProducts);
         document.getElementById('codeFilter').addEventListener('keyup', filterProducts);
@@ -376,24 +264,6 @@
             const searchValue = document.getElementById('searchInput').value.toLowerCase();
             const codeValue = document.getElementById('codeFilter').value.toLowerCase();
             const statusValue = document.getElementById('statusFilter').value;
-
-            // Filter grid view
-            const gridItems = document.querySelectorAll('#productsGrid > div');
-            gridItems.forEach(item => {
-                const text = item.textContent.toLowerCase();
-                const code = item.getAttribute('data-code') || '';
-                const status = item.getAttribute('data-status');
-
-                const matchesSearch = text.includes(searchValue);
-                const matchesCode = code.toLowerCase().includes(codeValue);
-                const matchesStatus = !statusValue || status === statusValue;
-
-                if (matchesSearch && matchesCode && matchesStatus) {
-                    item.style.display = '';
-                } else {
-                    item.style.display = 'none';
-                }
-            });
 
             // Filter table view
             const tableRows = document.querySelectorAll('#productsTable tbody tr');
@@ -420,21 +290,5 @@
             document.getElementById('statusFilter').value = '';
             filterProducts();
         }
-
-        // Product card hover effects
-        document.addEventListener('DOMContentLoaded', function() {
-            const cards = document.querySelectorAll('.product-card');
-            cards.forEach(card => {
-                card.addEventListener('mouseenter', function() {
-                    this.style.transform = 'translateY(-5px)';
-                    this.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
-                });
-
-                card.addEventListener('mouseleave', function() {
-                    this.style.transform = 'translateY(0)';
-                    this.style.boxShadow = '';
-                });
-            });
-        });
     </script>
 }
