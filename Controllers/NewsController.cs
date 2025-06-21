@@ -74,7 +74,10 @@ namespace panelOrmo.Controllers
                 IsActive = news.CIsValid
             };
 
-            ViewBag.CurrentImageUrl = news.CImage;
+            ViewBag.CurrentImageUrl = !string.IsNullOrEmpty(news.CImage) 
+                ? $"/Image/news/{news.CImage}" 
+                : null;
+
             return View(model);
         }
 

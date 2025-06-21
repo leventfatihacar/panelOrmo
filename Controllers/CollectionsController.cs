@@ -41,7 +41,7 @@ namespace panelOrmo.Controllers
             string imagePath = null;
             if (model.Image != null)
             {
-                imagePath = await _ftpService.UploadFile(model.Image, "/httpdocs/CMSFiles/Image/Banner");
+                imagePath = await _ftpService.UploadFile(model.Image, "/httpdocs/CMSFiles/Department/Image");
             }
 
             var success = await _databaseService.CreateCollection(model, userId, imagePath);
@@ -71,7 +71,9 @@ namespace panelOrmo.Controllers
                 LanguageID = collection.DLanguageID,
                 IsActive = collection.DIsValid
             };
-            ViewBag.CurrentImageUrl = collection.DPicture;
+            ViewBag.CurrentImageUrl = !string.IsNullOrEmpty(collection.DPicture) 
+                ? $"/Image/collections/{collection.DPicture}" 
+                : null;
             return View(model);
         }
 
@@ -87,7 +89,7 @@ namespace panelOrmo.Controllers
             string imagePath = null;
             if (model.Image != null)
             {
-                imagePath = await _ftpService.UploadFile(model.Image, "/httpdocs/CMSFiles/Image/Banner");
+                imagePath = await _ftpService.UploadFile(model.Image, "/httpdocs/CMSFiles/Department/Image");
             }
 
             var success = await _databaseService.UpdateCollection(id, model, userId, imagePath);

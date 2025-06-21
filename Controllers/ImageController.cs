@@ -29,6 +29,15 @@ namespace panelOrmo.Controllers
                 string ftpPath;
                 switch (imageType.ToLower())
                 {
+                    case "news":
+                        ftpPath = $"ftp://{ftpHost}/httpdocs/CMSFiles/Image/Content/{fileName}";
+                        break;
+                    case "collections":
+                        ftpPath = $"ftp://{ftpHost}/httpdocs/CMSFiles/Department/Image/{fileName}";
+                        break;
+                    case "collectiongroups":
+                        ftpPath = $"ftp://{ftpHost}/httpdocs/CMSFiles/Department/Image/{fileName}";
+                        break;
                     case "small":
                         ftpPath = $"ftp://{ftpHost}/httpdocs/CMSFiles/ProductImages/SmallImage/{fileName}";
                         break;

@@ -79,7 +79,9 @@ namespace panelOrmo.Controllers
             };
 
             ViewBag.Collections = await _databaseService.GetAllCollections();
-            ViewBag.CurrentImageUrl = group.DPicture;
+            ViewBag.CurrentImageUrl = !string.IsNullOrEmpty(group.DPicture)
+                ? $"/Image/collectiongroups/{group.DPicture}"
+                : null;
             return View(model);
         }
 

@@ -4,48 +4,194 @@
     Layout = "_Layout";
 }
 
+<style>
+    .image-upload-section {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+    }
+
+    .image-input-label {
+        display: block;
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 6px;
+        padding: 15px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        min-height: 70px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+    }
+
+    .image-input-label:hover {
+        background: #e9ecef;
+        border-color: #007bff;
+    }
+
+    .image-input-label i {
+        font-size: 1.2rem;
+        color: #6c757d;
+        margin-bottom: 4px;
+        pointer-events: none;
+    }
+
+    .image-input-label:hover i {
+        color: #007bff;
+    }
+
+    .image-input-label span {
+        pointer-events: none;
+    }
+    
+    .file-input {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+        z-index: 1;
+    }
+
+    .upload-header {
+        background: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        border-radius: 9px 9px 0 0;
+        padding: 12px 15px;
+        margin: -1px -1px 15px -1px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .upload-header h6 {
+        color: #495057;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .file-selected {
+        background: #d4edda !important;
+        border-color: #28a745 !important;
+        color: #155724;
+    }
+
+    .file-selected i {
+        color: #28a745 !important;
+    }
+
+    .existing-image-thumbnail {
+        width: 100%;
+        max-width: 200px;
+        height: auto;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 2px solid #dee2e6;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+</style>
+
 <div class="container mt-4">
-    <h2>Edit News Article</h2>
+    <div class="d-flex justify-content-between align-items-center pb-2 mb-4 border-bottom">
+        <h2 class="mb-0">Edit News Article</h2>
+        <a href="/News/Index" class="btn btn-sm btn-outline-secondary">Back to List</a>
+    </div>
+
     <form action="/News/Edit/@ViewContext.RouteData.Values["id"]" method="post" enctype="multipart/form-data">
-        <div class="mb-3">
-            <label for="Title" class="form-label">Title *</label>
-            <input name="Title" id="Title" class="form-control" placeholder="Enter article title" value="@Model.Title" required />
-        </div>
-        <div class="mb-3">
-            <label for="Content" class="form-label">Content *</label>
-            <textarea name="Content" id="Content" class="form-control" rows="8" placeholder="Write your article content here..." required>@Model.Content</textarea>
-        </div>
-        <div class="mb-3">
-            <label for="LanguageID" class="form-label">Language *</label>
-            <select name="LanguageID" id="LanguageID" class="form-select" required>
-                <option value="">Select Language</option>
-                <option value="1" selected="@(Model.LanguageID == 1)">Turkish</option>
-                <option value="2" selected="@(Model.LanguageID == 2)">English</option>
-            </select>
-        </div>
-        <div class="mb-3">
-            <label for="Image" class="form-label">Featured Image</label>
-            <input name="Image" id="Image" type="file" class="form-control" accept="image/jpeg" />
-            <div class="form-text">Only .jpg files are allowed. Leave blank to keep the current image.</div>
-            @if (!string.IsNullOrEmpty(ViewBag.CurrentImageUrl))
-            {
-                <div class="mt-2">
-                    <p>Current Image:</p>
-                    <img src="@ViewBag.CurrentImageUrl" style="max-width: 200px;" />
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="Title" class="form-label">Title *</label>
+                            <input name="Title" id="Title" class="form-control" placeholder="Enter article title" value="@Model.Title" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="Content" class="form-label">Content *</label>
+                            <textarea name="Content" id="Content" class="form-control" rows="10" placeholder="Write your article content here..." required>@Model.Content</textarea>
+                        </div>
+                         <div class="mb-3">
+                            <label for="PublishDate" class="form-label">Publish Date</label>
+                            <input name="PublishDate" id="PublishDate" type="date" class="form-control" value="@Model.PublishDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                    </div>
                 </div>
-            }
+            </div>
+            <div class="col-md-4">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">Properties</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="LanguageID" class="form-label">Language *</label>
+                            <select name="LanguageID" id="LanguageID" class="form-select" required>
+                                <option value="">Select Language</option>
+                                <option value="1" selected="@(Model.LanguageID == 1)">Turkish</option>
+                                <option value="2" selected="@(Model.LanguageID == 2)">English</option>
+                            </select>
+                        </div>
+                        <div class="form-check">
+                            <input name="IsActive" id="IsActive" class="form-check-input" type="checkbox" value="true" checked="@Model.IsActive" />
+                            <label for="IsActive" class="form-check-label">Active</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card image-upload-section p-3">
+                     <div class="upload-header">
+                        <h6><i class="fas fa-image me-2"></i>Featured Image</h6>
+                    </div>
+                    <p class="text-muted small mb-2">Leave blank to keep the current image. Only .jpg files are allowed.</p>
+                    
+                    @if (!string.IsNullOrEmpty(ViewBag.CurrentImageUrl))
+                    {
+                        <div class="mb-3 text-center">
+                             <label class="form-label d-block">Current Image</label>
+                            <img src="@ViewBag.CurrentImageUrl" class="existing-image-thumbnail" alt="Current Image"/>
+                        </div>
+                    }
+
+                    <div class="image-input-group">
+                        <label for="imageUpload" class="image-input-label">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span id="imageUploadText">Click to upload new image</span>
+                        </label>
+                        <input type="file" name="Image" id="imageUpload" class="file-input" accept="image/jpeg">
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="mb-3">
-            <label for="PublishDate" class="form-label">Publish Date</label>
-            <input name="PublishDate" id="PublishDate" type="date" class="form-control" value="@Model.PublishDate?.ToString("yyyy-MM-dd")" />
-        </div>
-        <div class="form-check mb-3">
-            <input name="IsActive" id="IsActive" class="form-check-input" type="checkbox" value="true" checked="@Model.IsActive" />
-            <label for="IsActive" class="form-check-label">Active</label>
-        </div>
-        <div class="d-flex gap-2">
+
+        <div class="mt-4">
             <button type="submit" class="btn btn-primary">Save Changes</button>
             <a href="/News/Index" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
-</div> 
+</div>
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const imageUpload = document.getElementById('imageUpload');
+    const imageUploadLabel = document.querySelector('label[for="imageUpload"]');
+    const imageUploadText = document.getElementById('imageUploadText');
+
+    imageUpload.addEventListener('change', function() {
+        if (this.files && this.files.length > 0) {
+            imageUploadText.textContent = this.files[0].name;
+            imageUploadLabel.classList.add('file-selected');
+        } else {
+            imageUploadText.textContent = 'Click to upload new image';
+            imageUploadLabel.classList.remove('file-selected');
+        }
+    });
+});
+</script>
+}
