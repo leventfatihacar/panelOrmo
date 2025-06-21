@@ -3,126 +3,523 @@
     ViewData["Title"] = "Edit Collection Product";
     Layout = "_Layout";
     var collectionGroups = ViewBag.CollectionGroups as List<panelOrmo.Models.CollectionGroup>;
+    var existingImages = ViewBag.ExistingImages as List<panelOrmo.Models.ProductImage> ?? new List<panelOrmo.Models.ProductImage>();
 }
 
-<div class="container mt-4">
+<style>
+    .image-upload-section {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+    }
+
+    .image-pair {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .image-pair:hover {
+            border-color: #007bff;
+        }
+
+    .existing-image-pair {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .existing-image-pair:hover {
+            border-color: #ffb300;
+        }
+
+    .existing-pair-header, .image-pair-header {
+        background: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        padding: 8px 12px;
+        margin: -1px -1px 12px -1px;
+        border-radius: 7px 7px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .existing-pair-header {
+        background: #fff3cd;
+        border-bottom-color: #ffc107;
+    }
+
+    .image-input-group {
+        margin-bottom: 12px;
+    }
+
+    .image-input-label {
+        display: block;
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 6px;
+        padding: 15px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        min-height: 70px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+    }
+
+        .image-input-label:hover {
+            background: #e9ecef;
+            border-color: #007bff;
+        }
+
+        .image-input-label i {
+            font-size: 1.2rem;
+            color: #6c757d;
+            margin-bottom: 4px;
+            pointer-events: none;
+        }
+
+        .image-input-label:hover i {
+            color: #007bff;
+        }
+
+        .image-input-label span {
+            pointer-events: none;
+        }
+
+    .file-input {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+        z-index: 1;
+    }
+
+    .add-image-btn {
+        background: #007bff;
+        border: none;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+        .add-image-btn:hover {
+            background: #0056b3;
+        }
+
+    .remove-pair-btn {
+        background: #dc3545;
+        border: none;
+        color: white;
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        font-size: 0.75rem;
+    }
+
+        .remove-pair-btn:hover {
+            background: #c82333;
+        }
+
+    .upload-header {
+        background: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        border-radius: 9px 9px 0 0;
+        padding: 12px 15px;
+        margin: -1px -1px 15px -1px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+        .upload-header h6 {
+            color: #495057;
+            font-weight: 600;
+            margin: 0;
+        }
+
+    .file-selected {
+        background: #d4edda !important;
+        border-color: #28a745 !important;
+        color: #155724;
+    }
+
+        .file-selected i {
+            color: #28a745 !important;
+        }
+
+    .existing-image-thumbnail {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+    }
+
+    .image-preview-container {
+        background: white;
+        border-radius: 6px;
+        padding: 12px;
+        border: 1px solid #e9ecef;
+        margin-bottom: 12px;
+    }
+
+    .section-divider {
+        border-top: 1px solid #dee2e6;
+        margin: 15px 0;
+    }
+
+    .marked-for-deletion {
+        opacity: 0.6 !important;
+        background: #f8d7da !important;
+        border-color: #dc3545 !important;
+    }
+
+    .restore-btn {
+        background: #28a745;
+        border: none;
+        color: white;
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        font-size: 0.75rem;
+    }
+
+        .restore-btn:hover {
+            background: #1e7e34;
+        }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
     <h2>Edit Collection Product</h2>
-    <form action="/CollectionProducts/Edit/@ViewContext.RouteData.Values["id"]" method="post" enctype="multipart/form-data">
-        <div class="row">
-            <div class="col-md-8">
-                <div class="mb-3">
-                    <label for="Product_ProductCode" class="form-label">Product Code *</label>
-                    <input name="Product.ProductCode" id="Product_ProductCode" class="form-control" placeholder="Enter product code" value="@Model.Product.ProductCode" required />
-                    <span asp-validation-for="Product.ProductCode" class="text-danger"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label for="Product_CollectionGroupID" class="form-label">Collection Group *</label>
-                    <select name="Product.CollectionGroupID" id="Product_CollectionGroupID" class="form-select" required>
-                        <option value="">Select Collection Group</option>
-                        @if (collectionGroups != null)
-                        {
-                            @foreach (var group in collectionGroups)
-                            {
-                                @if (Model.Product.CollectionGroupID == group.DID)
-                                {
-                                    <option value="@group.DID" selected>@group.DName</option>
-                                }
-                                else
-                                {
-                                    <option value="@group.DID">@group.DName</option>
-                                }
-                            }
-                        }
-                    </select>
-                    <span asp-validation-for="Product.CollectionGroupID" class="text-danger"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label for="Product_Content" class="form-label">Product Content *</label>
-                    <textarea name="Product.Content" id="Product_Content" class="form-control" rows="5" placeholder="Enter product details and ingredients" required>@Model.Product.Content</textarea>
-                    <div class="form-text">Content will be automatically wrapped in &lt;p&gt; tags</div>
-                    <span asp-validation-for="Product.Content" class="text-danger"></span>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="mb-3">
-                    <label for="Product_SmallImage" class="form-label">Small Image</label>
-                    <input name="Product.SmallImage" id="Product_SmallImage" type="file" class="form-control" accept="image/jpeg" />
-                    <div class="form-text">Small product image (.jpg only). Leave blank to keep current.</div>
-                    @if (!string.IsNullOrEmpty(Model.CurrentSmallImage))
-                    {
-                        <div class="mt-2">
-                            <p>Current:</p>
-                            <img src="@Model.CurrentSmallImage" style="max-width: 100px;" />
-                        </div>
-                    }
-                </div>
-
-                <div class="mb-3">
-                    <label for="Product_MediumImage" class="form-label">Medium Image</label>
-                    <input name="Product.MediumImage" id="Product_MediumImage" type="file" class="form-control" accept="image/jpeg" />
-                    <div class="form-text">Medium product image (.jpg only). Leave blank to keep current.</div>
-                    @if (!string.IsNullOrEmpty(Model.CurrentMediumImage))
-                    {
-                        <div class="mt-2">
-                            <p>Current:</p>
-                            <img src="@Model.CurrentMediumImage" style="max-width: 150px;" />
-                        </div>
-                    }
-                </div>
-
-                <div class="form-check mb-3">
-                    @if (Model.Product.IsActive)
-                    {
-                        <input name="Product.IsActive" id="Product_IsActive" class="form-check-input" type="checkbox" value="true" checked />
-                    }
-                    else
-                    {
-                        <input name="Product.IsActive" id="Product_IsActive" class="form-check-input" type="checkbox" value="true" />
-                    }
-                    <input type="hidden" name="Product.IsActive" value="false" />
-                    <label for="Product_IsActive" class="form-check-label">Active</label>
-                </div>
-            </div>
-        </div>
-
-        <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary">Save Changes</button>
-            <a href="/CollectionProducts/Index" class="btn btn-secondary">Cancel</a>
-        </div>
-    </form>
+    <a href="/CollectionProducts/Index" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to List
+    </a>
 </div>
 
-@section Scripts {
-    <script>
-        // Debug form submission
-        document.querySelector('form').addEventListener('submit', function(e) {
-            console.log('Form submission debug:');
+<form action="/CollectionProducts/Edit/@ViewContext.RouteData.Values["id"]" method="post" enctype="multipart/form-data" id="productForm">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="Product_ProductCode" class="form-label">Product Code *</label>
+                        <input name="Product.ProductCode" id="Product_ProductCode" class="form-control" placeholder="Enter product code" value="@Model.Product.ProductCode" required />
+                    </div>
 
-            const formData = new FormData(this);
-            for (let [key, value] of formData.entries()) {
-                console.log(`${key}: ${value}`);
-            }
+                    <div class="mb-3">
+                        <label for="Product_CollectionGroupID" class="form-label">Collection Group *</label>
+                        <select name="Product.CollectionGroupID" id="Product_CollectionGroupID" class="form-select" required>
+                            <option value="">Select Collection Group</option>
+                            @if (collectionGroups != null)
+                            {
+                                @foreach (var group in collectionGroups)
+                                {
+                                    <option value="@group.DID" selected="@(Model.Product.CollectionGroupID == group.DID)">@group.DName</option>
+                                }
+                            }
+                        </select>
+                    </div>
 
-            // Specific check for CollectionGroupID
-            const groupSelect = document.getElementById('Product_CollectionGroupID');
-            console.log('CollectionGroupID element value:', groupSelect.value);
-            console.log('CollectionGroupID selected index:', groupSelect.selectedIndex);
-            console.log('CollectionGroupID selected option text:', groupSelect.options[groupSelect.selectedIndex]?.text);
+                    <div class="mb-3">
+                        <label for="Product_Content" class="form-label">Product Content *</label>
+                        <textarea name="Product.Content" id="Product_Content" class="form-control" rows="5" placeholder="Enter product details and ingredients" required>@Model.Product.Content</textarea>
+                        <div class="form-text">Content will be automatically wrapped in &lt;p&gt; tags</div>
+                    </div>
 
-            // Validate required fields
-            if (!groupSelect.value) {
-                alert('Please select a Collection Group');
-                e.preventDefault();
-                return false;
+                    <div class="form-check mb-3">
+                        <input name="Product.IsActive" id="Product_IsActive" class="form-check-input" type="checkbox" value="true" checked="@Model.Product.IsActive" />
+                        <label for="Product_IsActive" class="form-check-label">Active</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card image-upload-section">
+                <div class="upload-header">
+                    <h6>Product Images</h6>
+                    <button type="button" class="add-image-btn" onclick="addImagePair()">
+                        <i class="fas fa-plus me-1"></i>Add Pair
+                    </button>
+                </div>
+                <div class="card-body">
+                    <!-- Existing Images Section -->
+                    @if (existingImages.Any())
+                    {
+                        <div class="mb-3">
+                            <h6 class="text-muted mb-2"><i class="fas fa-folder-open me-1"></i>Existing Images</h6>
+                            <div id="existingImagesContainer">
+                                @for (int i = 0; i < existingImages.Count; i++)
+                                {
+                                    <div class="existing-image-pair mb-2 p-2" data-image-id="@existingImages[i].PIID">
+                                        <div class="existing-pair-header">
+                                            <span>Existing Pair @(i + 1)</span>
+                                            <button type="button" class="remove-pair-btn" onclick="markImageForDeletion(@existingImages[i].PIID, this)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+
+                                        <!-- Current Images Preview -->
+                                        <div class="image-preview-container">
+                                            <div class="row g-2">
+                                                @if (!string.IsNullOrEmpty(existingImages[i].PISmallImage))
+                                                {
+                                                    <div class="col-6 text-center">
+                                                        <small class="text-muted d-block mb-1">Small</small>
+                                                        <img src="@existingImages[i].PISmallImage" class="existing-image-thumbnail" alt="Small image">
+                                                    </div>
+                                                }
+                                                @if (!string.IsNullOrEmpty(existingImages[i].PIMediumImage))
+                                                {
+                                                    <div class="col-6 text-center">
+                                                        <small class="text-muted d-block mb-1">Medium</small>
+                                                        <img src="@existingImages[i].PIMediumImage" class="existing-image-thumbnail" alt="Medium image">
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+
+                                        <!-- Replace Options -->
+                                        <div class="replace-section">
+                                            <div class="image-input-group">
+                                                <label class="image-input-label" style="min-height: 50px; padding: 10px;">
+                                                    <i class="fas fa-sync-alt"></i>
+                                                    <span class="small">Replace Small</span>
+                                                    <input name="ExistingImages[@i].NewSmallImage" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />
+                                                    <input type="hidden" name="ExistingImages[@i].PIID" value="@existingImages[i].PIID" />
+                                                </label>
+                                            </div>
+                                            <div class="image-input-group">
+                                                <label class="image-input-label" style="min-height: 50px; padding: 10px;">
+                                                    <i class="fas fa-sync-alt"></i>
+                                                    <span class="small">Replace Medium</span>
+                                                    <input name="ExistingImages[@i].NewMediumImage" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                            <div class="section-divider"></div>
+                        </div>
+                    }
+
+                    <!-- New Images Section -->
+                    <div>
+                        <h6 class="text-muted mb-2"><i class="fas fa-plus-circle me-1"></i>Add New Images</h6>
+                        <div id="imagePairsContainer">
+                            <!-- Initial new image pair -->
+                            <div class="image-pair mb-2 p-2" data-index="0">
+                                <div class="image-pair-header">
+                                    <span>New Pair 1</span>
+                                    <button type="button" class="remove-pair-btn d-none" onclick="removeImagePair(this)">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+
+                                <div class="image-input-group">
+                                    <label class="image-input-label" for="new-small-0">
+                                        <i class="fas fa-image"></i>
+                                        <span class="small">Small Image</span>
+                                        <input name="NewImagePairs[0].SmallImage" id="new-small-0" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />
+                                    </label>
+                                </div>
+
+                                <div class="image-input-group">
+                                    <label class="image-input-label" for="new-medium-0">
+                                        <i class="fas fa-image"></i>
+                                        <span class="small">Medium Image</span>
+                                        <input name="NewImagePairs[0].MediumImage" id="new-medium-0" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden field to track deleted images -->
+    <input type="hidden" id="deletedImages" name="DeletedImageIds" value="" />
+
+    <div class="d-flex gap-2 mt-3">
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save me-2"></i>Save Changes
+        </button>
+        <a href="/CollectionProducts/Index" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+<script>
+    let imagePairIndex = 1;
+    let deletedImageIds = [];
+
+    function addImagePair() {
+        const container = document.getElementById('imagePairsContainer');
+        const pairCount = container.children.length + 1;
+
+        const newPair = document.createElement('div');
+        newPair.className = 'image-pair mb-2 p-2';
+        newPair.setAttribute('data-index', imagePairIndex);
+
+        newPair.innerHTML = '<div class="image-pair-header">' +
+            '<span>New Pair ' + pairCount + '</span>' +
+            '<button type="button" class="remove-pair-btn" onclick="removeImagePair(this)">' +
+            '<i class="fas fa-times"></i>' +
+            '</button>' +
+            '</div>' +
+            '<div class="image-input-group">' +
+            '<label class="image-input-label" for="new-small-' + imagePairIndex + '">' +
+            '<i class="fas fa-image"></i>' +
+            '<span class="small">Small Image</span>' +
+            '<input name="NewImagePairs[' + imagePairIndex + '].SmallImage" id="new-small-' + imagePairIndex + '" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />' +
+            '</label>' +
+            '</div>' +
+            '<div class="image-input-group">' +
+            '<label class="image-input-label" for="new-medium-' + imagePairIndex + '">' +
+            '<i class="fas fa-image"></i>' +
+            '<span class="small">Medium Image</span>' +
+            '<input name="NewImagePairs[' + imagePairIndex + '].MediumImage" id="new-medium-' + imagePairIndex + '" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />' +
+            '</label>' +
+            '</div>';
+
+        container.appendChild(newPair);
+        imagePairIndex++;
+        updateRemoveButtons();
+    }
+
+    function removeImagePair(button) {
+        const pair = button.closest('.image-pair');
+        pair.remove();
+        renumberImagePairs();
+        updateRemoveButtons();
+    }
+
+    function renumberImagePairs() {
+        const pairs = document.querySelectorAll('.image-pair');
+        pairs.forEach((pair, index) => {
+            const title = pair.querySelector('.image-pair-header span');
+            title.textContent = 'New Pair ' + (index + 1);
+
+            const smallImageInput = pair.querySelector('input[type="file"]:first-of-type');
+            const mediumImageInput = pair.querySelector('input[type="file"]:last-of-type');
+
+            smallImageInput.name = 'NewImagePairs[' + index + '].SmallImage';
+            mediumImageInput.name = 'NewImagePairs[' + index + '].MediumImage';
+            smallImageInput.id = 'new-small-' + index;
+            mediumImageInput.id = 'new-medium-' + index;
+
+            const labels = pair.querySelectorAll('label');
+            labels[0].setAttribute('for', 'new-small-' + index);
+            labels[1].setAttribute('for', 'new-medium-' + index);
+
+            pair.setAttribute('data-index', index);
+        });
+    }
+
+    function updateRemoveButtons() {
+        const pairs = document.querySelectorAll('.image-pair');
+        const removeButtons = document.querySelectorAll('.image-pair .remove-pair-btn');
+
+        removeButtons.forEach((button, index) => {
+            if (pairs.length > 1) {
+                button.classList.remove('d-none');
+            } else {
+                button.classList.add('d-none');
             }
         });
+    }
 
-        // Debug dropdown change
-        document.getElementById('Product_CollectionGroupID').addEventListener('change', function() {
-            console.log('CollectionGroupID changed to:', this.value);
-        });
-    </script>
-}
+    function markImageForDeletion(imageId, button) {
+        if (confirm('Are you sure you want to delete this image pair? This action cannot be undone.')) {
+            deletedImageIds.push(imageId);
+            document.getElementById('deletedImages').value = deletedImageIds.join(',');
+
+            const container = button.closest('.existing-image-pair');
+            container.classList.add('marked-for-deletion');
+
+            button.innerHTML = '<i class="fas fa-undo"></i>';
+            button.className = 'restore-btn';
+            button.onclick = function() { restoreImage(imageId, this); };
+
+            const fileInputs = container.querySelectorAll('input[type="file"]');
+            fileInputs.forEach(input => input.disabled = true);
+        }
+    }
+
+    function restoreImage(imageId, button) {
+        deletedImageIds = deletedImageIds.filter(id => id !== imageId);
+        document.getElementById('deletedImages').value = deletedImageIds.join(',');
+
+        const container = button.closest('.existing-image-pair');
+        container.classList.remove('marked-for-deletion');
+
+        button.innerHTML = '<i class="fas fa-trash"></i>';
+        button.className = 'remove-pair-btn';
+        button.onclick = function() { markImageForDeletion(imageId, this); };
+
+        const fileInputs = container.querySelectorAll('input[type="file"]');
+        fileInputs.forEach(input => input.disabled = false);
+    }
+
+    function handleFileSelect(input) {
+        const label = input.closest('.image-input-label');
+        const fileName = input.files[0] ? input.files[0].name : null;
+
+        if (fileName) {
+            label.classList.add('file-selected');
+            const span = label.querySelector('span');
+            if (span) {
+                span.textContent = 'Selected: ' + (fileName.length > 15 ? fileName.substring(0, 15) + '...' : fileName);
+            }
+
+            const icon = label.querySelector('i');
+            icon.className = 'fas fa-check-circle';
+        } else {
+            label.classList.remove('file-selected');
+            const span = label.querySelector('span');
+            if (span) {
+                if (span.textContent.includes('Replace')) {
+                    span.textContent = span.textContent.includes('Small') ? 'Replace Small' : 'Replace Medium';
+                } else {
+                    span.textContent = span.textContent.includes('Small') ? 'Small Image' : 'Medium Image';
+                }
+            }
+
+            const icon = label.querySelector('i');
+            if (label.querySelector('span').textContent.includes('Replace')) {
+                icon.className = 'fas fa-sync-alt';
+            } else {
+                icon.className = 'fas fa-image';
+            }
+        }
+    }
+</script>

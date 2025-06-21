@@ -5,6 +5,144 @@
     var collectionGroups = ViewBag.CollectionGroups as List<panelOrmo.Models.CollectionGroup>;
 }
 
+<style>
+    .image-upload-section {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+    }
+
+    .image-pair {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .image-pair:hover {
+        border-color: #007bff;
+    }
+
+    .image-pair-header {
+        background: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        padding: 8px 12px;
+        margin: -1px -1px 12px -1px;
+        border-radius: 7px 7px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .image-input-group {
+        margin-bottom: 12px;
+    }
+
+    .image-input-label {
+        display: block;
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 6px;
+        padding: 15px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        min-height: 70px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .image-input-label:hover {
+        background: #e9ecef;
+        border-color: #007bff;
+    }
+
+    .image-input-label i {
+        font-size: 1.2rem;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+
+    .image-input-label:hover i {
+        color: #007bff;
+    }
+
+    .file-input {
+        position: absolute;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+    }
+
+    .add-image-btn {
+        background: #007bff;
+        border: none;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    .add-image-btn:hover {
+        background: #0056b3;
+    }
+
+    .remove-pair-btn {
+        background: #dc3545;
+        border: none;
+        color: white;
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        font-size: 0.75rem;
+    }
+
+    .remove-pair-btn:hover {
+        background: #c82333;
+    }
+
+    .upload-header {
+        background: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        border-radius: 9px 9px 0 0;
+        padding: 12px 15px;
+        margin: -1px -1px 15px -1px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .upload-header h6 {
+        color: #495057;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .file-selected {
+        background: #d4edda !important;
+        border-color: #28a745 !important;
+        color: #155724;
+    }
+
+    .file-selected i {
+        color: #28a745 !important;
+    }
+</style>
+
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2>Create Collection Product</h2>
     <a href="/CollectionProducts" class="btn btn-secondary">
@@ -12,19 +150,19 @@
     </a>
 </div>
 
-<div class="card">
-    <div class="card-body">
-        <form action="/CollectionProducts/Create" method="post" enctype="multipart/form-data">
-            <div class="row">
-                <div class="col-md-8">
+<form action="/CollectionProducts/Create" method="post" enctype="multipart/form-data" id="productForm">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
                     <div class="mb-3">
                         <label for="ProductCode" class="form-label">Product Code *</label>
-                        <input name="ProductCode" id="ProductCode" class="form-control" placeholder="Enter product code" />
+                        <input name="ProductCode" id="ProductCode" class="form-control" placeholder="Enter product code" required />
                     </div>
 
                     <div class="mb-3">
                         <label for="CollectionGroupID" class="form-label">Collection Group *</label>
-                        <select name="CollectionGroupID" id="CollectionGroupID" class="form-select">
+                        <select name="CollectionGroupID" id="CollectionGroupID" class="form-select" required>
                             <option value="">Select Collection Group</option>
                             @if (collectionGroups != null)
                             {
@@ -38,22 +176,8 @@
 
                     <div class="mb-3">
                         <label for="Content" class="form-label">Product Content *</label>
-                        <textarea name="Content" id="Content" class="form-control" rows="5" placeholder="Enter product details and ingredients"></textarea>
+                        <textarea name="Content" id="Content" class="form-control" rows="5" placeholder="Enter product details and ingredients" required></textarea>
                         <div class="form-text">Content will be automatically wrapped in &lt;p&gt; tags</div>
-                    </div>
-                </div>
-
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <label for="SmallImage" class="form-label">Small Image</label>
-                        <input name="SmallImage" id="SmallImage" type="file" class="form-control" accept="image/jpeg" />
-                        <div class="form-text">Small product image (.jpg only)</div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="MediumImage" class="form-label">Medium Image</label>
-                        <input name="MediumImage" id="MediumImage" type="file" class="form-control" accept="image/jpeg" />
-                        <div class="form-text">Medium product image (.jpg only)</div>
                     </div>
 
                     <div class="mb-3">
@@ -67,8 +191,461 @@
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div class="d-flex gap-2">
+        <div class="col-md-4">
+            <div class="card image-upload-section">
+                <div class="upload-header">
+                    <h6>Product Images</h6>
+                    <button type="button" class="add-image-btn" onclick="addImagePair()">
+                        <i class="fas fa-plus me-1"></i>Add Pair
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="imagePairsContainer">
+                        <!-- Initial image pair -->
+                        <div class="image-pair mb-2 p-2" data-index="0">
+                            <div class="image-pair-header">
+                                <span>Image Pair 1</span>
+                                <button type="button" class="remove-pair-btn d-none" onclick="removeImagePair(this)">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="image-input-group">
+                                <label class="image-input-label" for="small-0">
+                                    <i class="fas fa-image"></i>
+                                    <span class="small">Small Image</span>
+                                    <input name="ImagePairs[0].SmallImage" id="small-0" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />
+                                </label>
+                            </div>
+
+                            <div class="image-input-group">
+                                <label class="image-input-label" for="medium-0">
+                                    <i class="fas fa-image"></i>
+                                    <span class="small">Medium Image</span>
+                                    <input name="ImagePairs[0].MediumImage" id="medium-0" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-2">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            At least one image must be uploaded
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-3">
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save me-2"></i>Create Product
+        </button>
+        <a href="/CollectionProducts" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+<script>
+let imagePairIndex = 1;
+
+function addImagePair() {
+    const container = document.getElementById('imagePairsContainer');
+    const pairCount = container.children.length + 1;
+    
+    const newPair = document.createElement('div');
+    newPair.className = 'image-pair mb-2 p-2';
+    newPair.setAttribute('data-index', imagePairIndex);
+    
+    newPair.innerHTML = '<div class="image-pair-header">' +
+        '<span>Image Pair ' + pairCount + '</span>' +
+        '<button type="button" class="remove-pair-btn" onclick="removeImagePair(this)">' +
+        '<i class="fas fa-times"></i>' +
+        '</button>' +
+        '</div>' +
+        '<div class="image-input-group">' +
+        '<label class="image-input-label" for="small-' + imagePairIndex + '">' +
+        '<i class="fas fa-image"></i>' +
+        '<span class="small">Small Image</span>' +
+        '<input name="ImagePairs[' + imagePairIndex + '].SmallImage" id="small-' + imagePairIndex + '" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />' +
+        '</label>' +
+        '</div>' +
+        '<div class="image-input-group">' +
+        '<label class="image-input-label" for="medium-' + imagePairIndex + '">' +
+        '<i class="fas fa-image"></i>' +
+        '<span class="small">Medium Image</span>' +
+        '<input name="ImagePairs[' + imagePairIndex + '].MediumImage" id="medium-' + imagePairIndex + '" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />' +
+        '</label>' +
+        '</div>';
+    
+    container.appendChild(newPair);
+    imagePairIndex++;
+    updateRemoveButtons();
+}
+
+function removeImagePair(button) {
+    const pair = button.closest('.image-pair');
+    pair.remove();
+    renumberImagePairs();
+    updateRemoveButtons();
+}
+
+function renumberImagePairs() {
+    const pairs = document.querySelectorAll('.image-pair');
+    pairs.forEach((pair, index) => {
+        const title = pair.querySelector('.image-pair-header span');
+        title.textContent = 'Image Pair ' + (index + 1);
+        
+        const smallImageInput = pair.querySelector('input[type="file"]:first-of-type');
+        const mediumImageInput = pair.querySelector('input[type="file"]:last-of-type');
+        
+        smallImageInput.name = 'ImagePairs[' + index + '].SmallImage';
+        mediumImageInput.name = 'ImagePairs[' + index + '].MediumImage';
+        smallImageInput.id = 'small-' + index;
+        mediumImageInput.id = 'medium-' + index;
+        
+        const labels = pair.querySelectorAll('label');
+        labels[0].setAttribute('for', 'small-' + index);
+        labels[1].setAttribute('for', 'medium-' + index);
+        
+        pair.setAttribute('data-index', index);
+    });
+}
+
+function updateRemoveButtons() {
+    const pairs = document.querySelectorAll('.image-pair');
+    const removeButtons = document.querySelectorAll('.image-pair .remove-pair-btn');
+    
+    removeButtons.forEach((button, index) => {
+        if (pairs.length > 1) {
+            button.classList.remove('d-none');
+        } else {
+            button.classList.add('d-none');
+        }
+    });
+}
+
+function handleFileSelect(input) {
+    const label = input.closest('.image-input-label');
+    const fileName = input.files[0] ? input.files[0].name : null;
+    
+    if (fileName) {
+        label.classList.add('file-selected');
+        const span = label.querySelector('span');
+        if (span) {
+            span.textContent = 'Selected: ' + (fileName.length > 15 ? fileName.substring(0, 15) + '...' : fileName);
+        }
+        
+        const icon = label.querySelector('i');
+        icon.className = 'fas fa-check-circle';
+    } else {
+        label.classList.remove('file-selected');
+        const span = label.querySelector('span');
+        if (span) {
+            span.textContent = span.textContent.includes('Small') ? 'Small Image' : 'Medium Image';
+        }
+        
+        const icon = label.querySelector('i');
+        icon.className = 'fas fa-image';
+    }
+}
+
+// Form validation
+document.getElementById('productForm').addEventListener('submit', function(e) {
+    const pairs = document.querySelectorAll('.image-pair');
+    let hasValidPair = false;
+    
+    pairs.forEach(pair => {
+        const smallImage = pair.querySelector('input[type="file"]:first-of-type');
+        const mediumImage = pair.querySelector('input[type="file"]:last-of-type');
+        
+        if (smallImage.files.length > 0 || mediumImage.files.length > 0) {
+            hasValidPair = true;
+        }
+    });
+    
+    if (!hasValidPair) {
+        e.preventDefault();
+        alert('Please upload at least one image (small or medium) in the first image pair.');
+        return false;
+    }
+});
+</script>@@model panelOrmo.Models.CollectionProductViewModel
+@{
+    ViewData["Title"] = "Create Collection Product";
+    Layout = "_Layout";
+}
+
+<style>
+    .image-upload-section {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border: 2px dashed #dee2e6;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .image-upload-section:hover {
+        border-color: #007bff;
+        background: linear-gradient(135deg, #f0f8ff 0%, #e3f2fd 100%);
+    }
+
+    .image-pair {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .image-pair:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border-color: #007bff;
+    }
+
+    .image-pair-header {
+        background: linear-gradient(45deg, #007bff, #0056b3);
+        color: white;
+        padding: 8px 15px;
+        margin: -1px -1px 15px -1px;
+        border-radius: 9px 9px 0 0;
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .image-input-group {
+        position: relative;
+        margin-bottom: 15px;
+    }
+
+    .image-input-label {
+        display: block;
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-height: 80px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .image-input-label:hover {
+        background: #e3f2fd;
+        border-color: #007bff;
+        transform: scale(1.02);
+    }
+
+    .image-input-label i {
+        font-size: 1.5rem;
+        color: #6c757d;
+        margin-bottom: 5px;
+        transition: all 0.3s ease;
+    }
+
+    .image-input-label:hover i {
+        color: #007bff;
+        transform: scale(1.1);
+    }
+
+    .file-input {
+        position: absolute;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+    }
+
+    .add-image-btn {
+        background: linear-gradient(45deg, #28a745, #20c997);
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 25px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    }
+
+    .add-image-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+        background: linear-gradient(45deg, #20c997, #28a745);
+    }
+
+    .remove-pair-btn {
+        background: linear-gradient(45deg, #dc3545, #c82333);
+        border: none;
+        color: white;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+    }
+
+    .remove-pair-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+    }
+
+    .image-upload-header {
+        background: linear-gradient(135deg, #6f42c1, #007bff);
+        color: white;
+        border-radius: 8px 8px 0 0;
+        padding: 15px 20px;
+        margin: -1px -1px 20px -1px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .upload-icon {
+        background: rgba(255,255,255,0.2);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+    }
+
+    .file-selected {
+        background: #d4edda !important;
+        border-color: #28a745 !important;
+        color: #155724;
+    }
+
+    .file-selected i {
+        color: #28a745 !important;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Create Collection Product</h2>
+    <a href="/CollectionProducts" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to List
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form action="/CollectionProducts/Create" method="post" enctype="multipart/form-data" id="productForm">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="mb-3">
+                        <label for="ProductCode" class="form-label">Product Code *</label>
+                        <input name="ProductCode" id="ProductCode" class="form-control" placeholder="Enter product code" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="CollectionGroupID" class="form-label">Collection Group *</label>
+                        <select name="CollectionGroupID" id="CollectionGroupID" class="form-select" required>
+                            <option value="">Select Collection Group</option>
+                            @if (collectionGroups != null)
+                            {
+                                @foreach (var group in collectionGroups)
+                                {
+                                    <option value="@group.DID">@group.DName</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="Content" class="form-label">Product Content *</label>
+                        <textarea name="Content" id="Content" class="form-control" rows="5" placeholder="Enter product details and ingredients" required></textarea>
+                        <div class="form-text">Content will be automatically wrapped in &lt;p&gt; tags</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input name="IsActive" id="IsActive" class="form-check-input" type="checkbox" value="true" checked />
+                            <input type="hidden" name="IsActive" value="false" />
+                            <label for="IsActive" class="form-check-label">
+                                Active
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card image-upload-section">
+                        <div class="image-upload-header">
+                            <div class="d-flex align-items-center">
+                                <div class="upload-icon">
+                                    <i class="fas fa-images"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Product Images</h6>
+                                    <small class="opacity-75">Upload image pairs for your product</small>
+                                </div>
+                            </div>
+                            <button type="button" class="add-image-btn" onclick="addImagePair()">
+                                <i class="fas fa-plus me-2"></i>Add Pair
+                            </button>
+                        </div>
+                        <div class="card-body pt-0">
+                            <div id="imagePairsContainer">
+                                <!-- Initial image pair -->
+                                <div class="image-pair mb-3 p-3" data-index="0">
+                                    <div class="image-pair-header">
+                                        <span>Image Pair 1</span>
+                                        <button type="button" class="remove-pair-btn d-none" onclick="removeImagePair(this)">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="image-input-group">
+                                        <label class="image-input-label" for="small-0">
+                                            <i class="fas fa-image"></i>
+                                            <span class="fw-bold">Small Image</span>
+                                            <small class="text-muted">Click to browse (.jpg only)</small>
+                                            <input name="ImagePairs[0].SmallImage" id="small-0" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />
+                                        </label>
+                                    </div>
+
+                                    <div class="image-input-group">
+                                        <label class="image-input-label" for="medium-0">
+                                            <i class="fas fa-image"></i>
+                                            <span class="fw-bold">Medium Image</span>
+                                            <small class="text-muted">Click to browse (.jpg only)</small>
+                                            <input name="ImagePairs[0].MediumImage" id="medium-0" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-center mt-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    At least one image must be uploaded
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-3">
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save me-2"></i>Create Product
                 </button>
@@ -77,3 +654,167 @@
         </form>
     </div>
 </div>
+
+<script>
+let imagePairIndex = 1;
+
+function addImagePair() {
+    const container = document.getElementById('imagePairsContainer');
+    const pairCount = container.children.length + 1;
+    
+    const newPair = document.createElement('div');
+    newPair.className = 'image-pair mb-3 p-3';
+    newPair.setAttribute('data-index', imagePairIndex);
+    
+    newPair.innerHTML = `
+        <div class="image-pair-header">
+            <span>Image Pair ${pairCount}</span>
+            <button type="button" class="remove-pair-btn" onclick="removeImagePair(this)">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="image-input-group">
+            <label class="image-input-label" for="small-${imagePairIndex}">
+                <i class="fas fa-image"></i>
+                <span class="fw-bold">Small Image</span>
+                <small class="text-muted">Click to browse (.jpg only)</small>
+                <input name="ImagePairs[${imagePairIndex}].SmallImage" id="small-${imagePairIndex}" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />
+            </label>
+        </div>
+
+        <div class="image-input-group">
+            <label class="image-input-label" for="medium-${imagePairIndex}">
+                <i class="fas fa-image"></i>
+                <span class="fw-bold">Medium Image</span>
+                <small class="text-muted">Click to browse (.jpg only)</small>
+                <input name="ImagePairs[${imagePairIndex}].MediumImage" id="medium-${imagePairIndex}" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />
+            </label>
+        </div>
+    `;
+    
+    container.appendChild(newPair);
+    imagePairIndex++;
+    
+    // Animate the new pair
+    newPair.style.opacity = '0';
+    newPair.style.transform = 'translateY(20px)';
+    setTimeout(() => {
+        newPair.style.transition = 'all 0.3s ease';
+        newPair.style.opacity = '1';
+        newPair.style.transform = 'translateY(0)';
+    }, 10);
+    
+    updateRemoveButtons();
+}
+
+function removeImagePair(button) {
+    const pair = button.closest('.image-pair');
+    
+    // Animate removal
+    pair.style.transition = 'all 0.3s ease';
+    pair.style.opacity = '0';
+    pair.style.transform = 'translateX(-100%)';
+    
+    setTimeout(() => {
+        pair.remove();
+        renumberImagePairs();
+        updateRemoveButtons();
+    }, 300);
+}
+
+function renumberImagePairs() {
+    const pairs = document.querySelectorAll('.image-pair');
+    pairs.forEach((pair, index) => {
+        const title = pair.querySelector('.image-pair-header span');
+        title.textContent = `Image Pair ${index + 1}`;
+        
+        const smallImageInput = pair.querySelector('input[type="file"]:first-of-type');
+        const mediumImageInput = pair.querySelector('input[type="file"]:last-of-type');
+        
+        smallImageInput.name = `ImagePairs[${index}].SmallImage`;
+        mediumImageInput.name = `ImagePairs[${index}].MediumImage`;
+        smallImageInput.id = `small-${index}`;
+        mediumImageInput.id = `medium-${index}`;
+        
+        // Update labels
+        const labels = pair.querySelectorAll('label');
+        labels[0].setAttribute('for', `small-${index}`);
+        labels[1].setAttribute('for', `medium-${index}`);
+        
+        pair.setAttribute('data-index', index);
+    });
+}
+
+function updateRemoveButtons() {
+    const pairs = document.querySelectorAll('.image-pair');
+    const removeButtons = document.querySelectorAll('.image-pair .remove-pair-btn');
+    
+    removeButtons.forEach((button, index) => {
+        if (pairs.length > 1) {
+            button.classList.remove('d-none');
+        } else {
+            button.classList.add('d-none');
+        }
+    });
+}
+
+function handleFileSelect(input) {
+    const label = input.closest('.image-input-label');
+    const fileName = input.files[0]?.name;
+    
+    if (fileName) {
+        label.classList.add('file-selected');
+        const smallText = label.querySelector('small');
+        smallText.textContent = `Selected: ${fileName}`;
+        
+        // Add a checkmark icon
+        const icon = label.querySelector('i');
+        icon.className = 'fas fa-check-circle';
+    } else {
+        label.classList.remove('file-selected');
+        const smallText = label.querySelector('small');
+        smallText.textContent = 'Click to browse (.jpg only)';
+        
+        // Restore original icon
+        const icon = label.querySelector('i');
+        icon.className = 'fas fa-image';
+    }
+}
+
+// Form validation
+document.getElementById('productForm').addEventListener('submit', function(e) {
+    const pairs = document.querySelectorAll('.image-pair');
+    let hasValidPair = false;
+    
+    pairs.forEach(pair => {
+        const smallImage = pair.querySelector('input[type="file"]:first-of-type');
+        const mediumImage = pair.querySelector('input[type="file"]:last-of-type');
+        
+        if (smallImage.files.length > 0 || mediumImage.files.length > 0) {
+            hasValidPair = true;
+        }
+    });
+    
+    if (!hasValidPair) {
+        e.preventDefault();
+        
+        // Show better error message
+        const errorAlert = document.createElement('div');
+        errorAlert.className = 'alert alert-danger alert-dismissible fade show';
+        errorAlert.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Upload Required:</strong> Please upload at least one image (small or medium) in the first image pair.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const form = document.getElementById('productForm');
+        form.insertBefore(errorAlert, form.firstChild);
+        
+        // Scroll to error
+        errorAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        return false;
+    }
+});
+</script>

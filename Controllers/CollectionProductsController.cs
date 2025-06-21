@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using panelOrmo.Models;
 using panelOrmo.Services;
-using System.Security.Claims; 
+using System.Security.Claims;
 
 namespace panelOrmo.Controllers
 {
@@ -10,13 +10,11 @@ namespace panelOrmo.Controllers
     {
         private readonly DatabaseService _databaseService;
         private readonly FTPService _ftpService;
-        private readonly ILogger<CollectionProductsController> _logger;
 
-        public CollectionProductsController(DatabaseService databaseService, FTPService ftpService, ILogger<CollectionProductsController> logger)
+        public CollectionProductsController(DatabaseService databaseService, FTPService ftpService)
         {
             _databaseService = databaseService;
             _ftpService = ftpService;
-            _logger = logger;
         }
 
         public async Task<IActionResult> Index()
@@ -43,6 +41,44 @@ namespace panelOrmo.Controllers
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "";
 
+            // Convert form data to ImagePairs if they exist
+            if (Request.Form.Files.Any())
+            {
+                var imagePairs = new List<ImagePair>();
+                var groupedFiles = Request.Form.Files
+                    .Where(f => f.Name.StartsWith("ImagePairs["))
+                    .GroupBy(f => {
+                        // Extract index from names like "ImagePairs[0].SmallImage"
+                        var startIndex = f.Name.IndexOf('[') + 1;
+                        var endIndex = f.Name.IndexOf(']');
+                        if (startIndex > 0 && endIndex > startIndex)
+                        {
+                            var indexStr = f.Name.Substring(startIndex, endIndex - startIndex);
+                            return int.TryParse(indexStr, out var index) ? index : -1;
+                        }
+                        return -1;
+                    })
+                    .Where(g => g.Key >= 0)
+                    .OrderBy(g => g.Key);
+
+                foreach (var group in groupedFiles)
+                {
+                    var smallImage = group.FirstOrDefault(f => f.Name.Contains(".SmallImage"));
+                    var mediumImage = group.FirstOrDefault(f => f.Name.Contains(".MediumImage"));
+
+                    if (smallImage != null || mediumImage != null)
+                    {
+                        imagePairs.Add(new ImagePair
+                        {
+                            SmallImage = smallImage,
+                            MediumImage = mediumImage
+                        });
+                    }
+                }
+
+                model.ImagePairs = imagePairs;
+            }
+
             var success = await _databaseService.CreateCollectionProduct(model, userId);
             if (success)
             {
@@ -65,6 +101,11 @@ namespace panelOrmo.Controllers
             }
 
             ViewBag.CollectionGroups = await _databaseService.GetAllCollectionGroups();
+
+            // Get existing images for the view
+            var existingImages = await _databaseService.GetProductImages(id);
+            ViewBag.ExistingImages = existingImages;
+
             return View(model);
         }
 
@@ -74,49 +115,98 @@ namespace panelOrmo.Controllers
             if (!ModelState.IsValid)
             {
                 ViewBag.CollectionGroups = await _databaseService.GetAllCollectionGroups();
+                var existingImages = await _databaseService.GetProductImages(id);
+                ViewBag.ExistingImages = existingImages;
                 return View(model);
             }
 
-            if (model.Product?.SmallImage != null)
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "";
+
+            // Process existing images with replacements
+            if (Request.Form.Files.Any())
             {
-                    model.Product.SmallImage.FileName, model.Product.SmallImage.Length);
-            }
+                var existingImagesList = new List<ExistingImagePair>();
+                var newImagePairsList = new List<ImagePair>();
 
-            if (model.Product?.MediumImage != null)
-            {
-                    model.Product.MediumImage.FileName, model.Product.MediumImage.Length);
-            }
+                // Process existing image replacements
+                var existingFiles = Request.Form.Files
+                    .Where(f => f.Name.StartsWith("ExistingImages["))
+                    .GroupBy(f => {
+                        var startIndex = f.Name.IndexOf('[') + 1;
+                        var endIndex = f.Name.IndexOf(']');
+                        if (startIndex > 0 && endIndex > startIndex)
+                        {
+                            var indexStr = f.Name.Substring(startIndex, endIndex - startIndex);
+                            return int.TryParse(indexStr, out var index) ? index : -1;
+                        }
+                        return -1;
+                    })
+                    .Where(g => g.Key >= 0);
 
-            // Extract user information
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var usernameClaim = User.FindFirst(ClaimTypes.Name)?.Value;
-
-            var userId = int.Parse(userIdClaim ?? "0");
-            var username = usernameClaim ?? "";
-
-            try
-            {
-                var success = await _databaseService.UpdateCollectionProduct(id, model.Product, userId);
-
-                if (success)
+                foreach (var group in existingFiles)
                 {
-                    await _databaseService.LogActivity(userId, username, "Update Collection Product", "CMSProduct", id);
+                    var smallImage = group.FirstOrDefault(f => f.Name.Contains(".NewSmallImage"));
+                    var mediumImage = group.FirstOrDefault(f => f.Name.Contains(".NewMediumImage"));
+                    var piidValue = Request.Form[$"ExistingImages[{group.Key}].PIID"].FirstOrDefault();
 
-                    TempData["Success"] = "Collection product updated successfully";
-                    return RedirectToAction("Index");
+                    if (int.TryParse(piidValue, out var piid))
+                    {
+                        existingImagesList.Add(new ExistingImagePair
+                        {
+                            PIID = piid,
+                            NewSmallImage = smallImage,
+                            NewMediumImage = mediumImage
+                        });
+                    }
                 }
-                else
+
+                // Process new image pairs
+                var newFiles = Request.Form.Files
+                    .Where(f => f.Name.StartsWith("NewImagePairs["))
+                    .GroupBy(f => {
+                        var startIndex = f.Name.IndexOf('[') + 1;
+                        var endIndex = f.Name.IndexOf(']');
+                        if (startIndex > 0 && endIndex > startIndex)
+                        {
+                            var indexStr = f.Name.Substring(startIndex, endIndex - startIndex);
+                            return int.TryParse(indexStr, out var index) ? index : -1;
+                        }
+                        return -1;
+                    })
+                    .Where(g => g.Key >= 0)
+                    .OrderBy(g => g.Key);
+
+                foreach (var group in newFiles)
                 {
+                    var smallImage = group.FirstOrDefault(f => f.Name.Contains(".SmallImage"));
+                    var mediumImage = group.FirstOrDefault(f => f.Name.Contains(".MediumImage"));
+
+                    if (smallImage != null || mediumImage != null)
+                    {
+                        newImagePairsList.Add(new ImagePair
+                        {
+                            SmallImage = smallImage,
+                            MediumImage = mediumImage
+                        });
+                    }
                 }
+
+                model.ExistingImages = existingImagesList;
+                model.NewImagePairs = newImagePairsList;
             }
-            catch (Exception ex)
+
+            var success = await _databaseService.UpdateCollectionProduct(id, model, userId);
+            if (success)
             {
-                _logger.LogError(ex, "Exception occurred during UpdateCollectionProduct");
-                _logger.LogError("Exception details: {Message}", ex.Message);
-                _logger.LogError("Stack trace: {StackTrace}", ex.StackTrace);
+                await _databaseService.LogActivity(userId, username, "Update Collection Product", "CMSProduct", id);
+                TempData["Success"] = "Collection product updated successfully";
+                return RedirectToAction("Index");
             }
 
             ViewBag.CollectionGroups = await _databaseService.GetAllCollectionGroups();
+            var existingImagesForView = await _databaseService.GetProductImages(id);
+            ViewBag.ExistingImages = existingImagesForView;
             ModelState.AddModelError("", "Failed to update collection product");
             return View(model);
         }

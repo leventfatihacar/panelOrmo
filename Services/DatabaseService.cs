@@ -762,6 +762,38 @@ namespace panelOrmo.Services
             return (groupId, smallImage, mediumImage);
         }
 
+        public async Task<List<ProductImage>> GetProductImages(int productId)
+        {
+            var images = new List<ProductImage>();
+            using var connection = new SqlConnection(_connectionString);
+            var query = @"SELECT PIID, PIProductID, PISmallImage, PIMediumImage, PIDescription, 
+                 PIIsValid, PICreatedDate, PICreatedUserID 
+                 FROM CMSProductImage 
+                 WHERE PIProductID = @productId AND PIIsValid = 1
+                 ORDER BY PICreatedDate";
+            using var command = new SqlCommand(query, connection);
+            command.Parameters.AddWithValue("@productId", productId);
+
+            await connection.OpenAsync();
+            using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                images.Add(new ProductImage
+                {
+                    PIID = reader.GetInt32("PIID"),
+                    PIProductID = reader.GetInt32("PIProductID"),
+                    PISmallImage = reader.IsDBNull("PISmallImage") ? null : reader.GetString("PISmallImage"),
+                    PIMediumImage = reader.IsDBNull("PIMediumImage") ? null : reader.GetString("PIMediumImage"),
+                    PIDescription = reader.IsDBNull("PIDescription") ? null : reader.GetString("PIDescription"),
+                    PIIsValid = reader.GetBoolean("PIIsValid"),
+                    PICreatedDate = reader.GetDateTime("PICreatedDate"),
+                    PICreatedUserID = reader.IsDBNull("PICreatedUserID") ? null : reader.GetInt32("PICreatedUserID")
+                });
+            }
+            return images;
+        }
+
         public async Task<CollectionProductEditViewModel> GetCollectionProductForEdit(int id)
         {
             var product = await GetCollectionProductById(id);
@@ -770,6 +802,15 @@ namespace panelOrmo.Services
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
             var details = await GetProductDetailsForEdit(id, connection);
+
+            // Get existing images
+            var existingImages = await GetProductImages(id);
+            var existingImagePairs = existingImages.Select((img, index) => new ExistingImagePair
+            {
+                PIID = img.PIID,
+                NewSmallImage = null,
+                NewMediumImage = null
+            }).ToList();
 
             var viewModel = new CollectionProductEditViewModel
             {
@@ -780,6 +821,9 @@ namespace panelOrmo.Services
                     IsActive = product.PIsValid,
                     CollectionGroupID = details.GroupId
                 },
+                ExistingImages = existingImagePairs,
+                NewImagePairs = new List<ImagePair>(),
+                // Keep for backward compatibility
                 CurrentSmallImage = details.SmallImage,
                 CurrentMediumImage = details.MediumImage
             };
@@ -787,7 +831,7 @@ namespace panelOrmo.Services
             return viewModel;
         }
 
-        public async Task<bool> UpdateCollectionProduct(int id, CollectionProductViewModel model, int userId)
+        public async Task<bool> UpdateCollectionProduct(int id, CollectionProductEditViewModel model, int userId)
         {
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
@@ -795,32 +839,32 @@ namespace panelOrmo.Services
 
             try
             {
-                var groupInfoResult = await GetCollectionGroupInfo(model.CollectionGroupID, connection, transaction);
+                var groupInfoResult = await GetCollectionGroupInfo(model.Product.CollectionGroupID, connection, transaction);
                 if (!groupInfoResult.HasValue)
                 {
                     transaction.Rollback();
                     return false;
                 }
                 var groupInfo = groupInfoResult.Value;
-                var productName = $"{groupInfo.CollectionName} - {model.ProductCode}";
-                var formattedContent = $"<p>{model.Content}</p>";
+                var productName = $"{groupInfo.CollectionName} - {model.Product.ProductCode}";
+                var formattedContent = $"<p>{model.Product.Content}</p>";
 
                 // Update CMSProduct
                 var productQuery = @"UPDATE CMSProduct SET 
-                                   PCode = @pcode, 
-                                   PStockCode = @pcode, 
-                                   PName = @pname, 
-                                   PInfoPreview = @pname, 
-                                   PContent = @content, 
-                                   PIsValid = @isValid
-                                   WHERE PID = @id";
+                           PCode = @pcode, 
+                           PStockCode = @pcode, 
+                           PName = @pname, 
+                           PInfoPreview = @pname, 
+                           PContent = @content, 
+                           PIsValid = @isValid
+                           WHERE PID = @id";
                 using (var productCommand = new SqlCommand(productQuery, connection, transaction))
                 {
                     productCommand.Parameters.AddWithValue("@id", id);
-                    productCommand.Parameters.AddWithValue("@pcode", model.ProductCode);
+                    productCommand.Parameters.AddWithValue("@pcode", model.Product.ProductCode);
                     productCommand.Parameters.AddWithValue("@pname", productName);
                     productCommand.Parameters.AddWithValue("@content", formattedContent);
-                    productCommand.Parameters.AddWithValue("@isValid", model.IsActive);
+                    productCommand.Parameters.AddWithValue("@isValid", model.Product.IsActive);
                     await productCommand.ExecuteNonQueryAsync();
                 }
 
@@ -829,69 +873,100 @@ namespace panelOrmo.Services
                 using (var deptCommand = new SqlCommand(deptQuery, connection, transaction))
                 {
                     deptCommand.Parameters.AddWithValue("@id", id);
-                    deptCommand.Parameters.AddWithValue("@deptId", model.CollectionGroupID);
+                    deptCommand.Parameters.AddWithValue("@deptId", model.Product.CollectionGroupID);
                     await deptCommand.ExecuteNonQueryAsync();
                 }
 
-                // Handle image uploads
-                if (model.SmallImage != null || model.MediumImage != null)
+                var ftpService = new FTPService(_configuration);
+
+                // Handle deleted images
+                if (!string.IsNullOrEmpty(model.DeletedImageIds))
                 {
-                    var ftpService = new FTPService(_configuration);
-                    string smallImagePath = null, mediumImagePath = null;
-
-                    if (model.SmallImage != null)
+                    var deletedIds = model.DeletedImageIds.Split(',').Where(x => int.TryParse(x, out _)).Select(int.Parse);
+                    foreach (var deletedId in deletedIds)
                     {
-                        smallImagePath = await ftpService.UploadFile(model.SmallImage, "/httpdocs/CMSFiles/ProductImages/SmallImage");
+                        var deleteQuery = "DELETE FROM CMSProductImage WHERE PIID = @piid";
+                        using var deleteCommand = new SqlCommand(deleteQuery, connection, transaction);
+                        deleteCommand.Parameters.AddWithValue("@piid", deletedId);
+                        await deleteCommand.ExecuteNonQueryAsync();
                     }
-                    if (model.MediumImage != null)
-                    {
-                        mediumImagePath = await ftpService.UploadFile(model.MediumImage, "/httpdocs/CMSFiles/ProductImages/MediumImage");
-                    }
+                }
 
-                    // Check if an image record already exists
-                    var checkImageQuery = "SELECT COUNT(*) FROM CMSProductImage WHERE PIProductID = @id";
-                    int imageCount;
-                    using (var checkCmd = new SqlCommand(checkImageQuery, connection, transaction))
+                // Update existing images
+                if (model.ExistingImages != null)
+                {
+                    foreach (var existingImage in model.ExistingImages)
                     {
-                        checkCmd.Parameters.AddWithValue("@id", id);
-                        imageCount = (int)await checkCmd.ExecuteScalarAsync();
-                    }
-
-                    if (imageCount > 0)
-                    {
-                        // Update existing image record
-                        var imageUpdateQuery = "UPDATE CMSProductImage SET ";
-                        if (smallImagePath != null) imageUpdateQuery += "PISmallImage = @smallImage, ";
-                        if (mediumImagePath != null) imageUpdateQuery += "PIMediumImage = @mediumImage, ";
-                        imageUpdateQuery += "PIDescription = @description, PIIsValid = @isValid WHERE PIProductID = @id";
-
-                        using (var imageCommand = new SqlCommand(imageUpdateQuery, connection, transaction))
+                        if (existingImage.NewSmallImage != null || existingImage.NewMediumImage != null)
                         {
-                            imageCommand.Parameters.AddWithValue("@id", id);
-                            if (smallImagePath != null) imageCommand.Parameters.AddWithValue("@smallImage", smallImagePath);
-                            if (mediumImagePath != null) imageCommand.Parameters.AddWithValue("@mediumImage", mediumImagePath);
-                            imageCommand.Parameters.AddWithValue("@description", $"{groupInfo.GroupName} - {model.ProductCode}");
-                            imageCommand.Parameters.AddWithValue("@isValid", model.IsActive);
-                            await imageCommand.ExecuteNonQueryAsync();
+                            string smallImagePath = null, mediumImagePath = null;
+
+                            if (existingImage.NewSmallImage != null)
+                            {
+                                smallImagePath = await ftpService.UploadFile(existingImage.NewSmallImage, "/httpdocs/CMSFiles/ProductImages/SmallImage");
+                            }
+                            if (existingImage.NewMediumImage != null)
+                            {
+                                mediumImagePath = await ftpService.UploadFile(existingImage.NewMediumImage, "/httpdocs/CMSFiles/ProductImages/MediumImage");
+                            }
+
+                            var updateImageQuery = "UPDATE CMSProductImage SET ";
+                            var updateParams = new List<string>();
+
+                            if (smallImagePath != null)
+                                updateParams.Add("PISmallImage = @smallImage");
+                            if (mediumImagePath != null)
+                                updateParams.Add("PIMediumImage = @mediumImage");
+
+                            updateImageQuery += string.Join(", ", updateParams);
+                            updateImageQuery += " WHERE PIID = @piid";
+
+                            using var updateCommand = new SqlCommand(updateImageQuery, connection, transaction);
+                            updateCommand.Parameters.AddWithValue("@piid", existingImage.PIID);
+                            if (smallImagePath != null)
+                                updateCommand.Parameters.AddWithValue("@smallImage", smallImagePath);
+                            if (mediumImagePath != null)
+                                updateCommand.Parameters.AddWithValue("@mediumImage", mediumImagePath);
+                            await updateCommand.ExecuteNonQueryAsync();
                         }
                     }
-                    else
+                }
+
+                // Add new images
+                if (model.NewImagePairs != null)
+                {
+                    foreach (var newImagePair in model.NewImagePairs)
                     {
-                        // Insert new image record
-                        var nextPIID = await GetNextId(connection, "CMSProductImage", "PIID", transaction);
-                        var imageInsertQuery = @"INSERT INTO CMSProductImage (PIID, PIProductID, PISmallImage, PIMediumImage, PIDescription, PIIsValid, PICreatedDate, PICreatedUserID)
-                                             VALUES (@piid, @productId, @smallImage, @mediumImage, @description, @isValid, @createdDate, @userId)";
-                        using (var imageCommand = new SqlCommand(imageInsertQuery, connection, transaction))
+                        if (newImagePair.SmallImage != null || newImagePair.MediumImage != null)
                         {
-                            imageCommand.Parameters.AddWithValue("@piid", nextPIID);
-                            imageCommand.Parameters.AddWithValue("@productId", id);
-                            imageCommand.Parameters.AddWithValue("@smallImage", smallImagePath ?? (object)DBNull.Value);
-                            imageCommand.Parameters.AddWithValue("@mediumImage", mediumImagePath ?? (object)DBNull.Value);
-                            imageCommand.Parameters.AddWithValue("@description", $"{groupInfo.GroupName} - {model.ProductCode}");
-                            imageCommand.Parameters.AddWithValue("@isValid", model.IsActive);
-                            imageCommand.Parameters.AddWithValue("@createdDate", DateTime.Now);
-                            imageCommand.Parameters.AddWithValue("@userId", userId);
-                            await imageCommand.ExecuteNonQueryAsync();
+                            var nextPIID = await GetNextId(connection, "CMSProductImage", "PIID", transaction);
+                            string smallImagePath = null, mediumImagePath = null;
+
+                            if (newImagePair.SmallImage != null)
+                            {
+                                smallImagePath = await ftpService.UploadFile(newImagePair.SmallImage, "/httpdocs/CMSFiles/ProductImages/SmallImage");
+                            }
+                            if (newImagePair.MediumImage != null)
+                            {
+                                mediumImagePath = await ftpService.UploadFile(newImagePair.MediumImage, "/httpdocs/CMSFiles/ProductImages/MediumImage");
+                            }
+
+                            var insertImageQuery = @"INSERT INTO CMSProductImage (PIID, PIProductID, PIProductVariationID, 
+                                           PIPositionX, PIPositionY, PISmallImage, PIMediumImage, PIBigImage, 
+                                           PIDescription, PIGroup, PIOrder, PIIsValid, PICreatedDate, PICreatedUserID)
+                                           VALUES (@piid, @productId, NULL, NULL, NULL, @smallImage, @mediumImage, '', 
+                                           @description, '', 0, @isValid, @createdDate, @userId)";
+
+                            using var insertCommand = new SqlCommand(insertImageQuery, connection, transaction);
+                            insertCommand.Parameters.AddWithValue("@piid", nextPIID);
+                            insertCommand.Parameters.AddWithValue("@productId", id);
+                            insertCommand.Parameters.AddWithValue("@smallImage", smallImagePath ?? (object)DBNull.Value);
+                            insertCommand.Parameters.AddWithValue("@mediumImage", mediumImagePath ?? (object)DBNull.Value);
+                            insertCommand.Parameters.AddWithValue("@description", $"{groupInfo.GroupName} - {model.Product.ProductCode}");
+                            insertCommand.Parameters.AddWithValue("@isValid", model.Product.IsActive);
+                            insertCommand.Parameters.AddWithValue("@createdDate", DateTime.Now);
+                            insertCommand.Parameters.AddWithValue("@userId", userId);
+                            await insertCommand.ExecuteNonQueryAsync();
                         }
                     }
                 }
@@ -915,7 +990,7 @@ namespace panelOrmo.Services
             using var transaction = connection.BeginTransaction();
             try
             {
-                // Get collection group info - FIXED: Proper nullable tuple handling
+                // Get collection group info
                 var groupInfoResult = await GetCollectionGroupInfo(model.CollectionGroupID, connection, transaction);
                 if (!groupInfoResult.HasValue)
                 {
@@ -923,29 +998,28 @@ namespace panelOrmo.Services
                     return false;
                 }
 
-                var groupInfo = groupInfoResult.Value; // Extract the value from nullable tuple
+                var groupInfo = groupInfoResult.Value;
 
                 // Get next IDs
                 var nextPID = await GetNextId(connection, "CMSProduct", "PID", transaction);
                 var nextPDID = await GetNextId(connection, "CMSProductDepartment", "PDID", transaction);
-                var nextPIID = await GetNextId(connection, "CMSProductImage", "PIID", transaction);
 
                 var createdDate = DateTime.Now;
-                var productName = $"{groupInfo.CollectionName} - {model.ProductCode}"; // FIXED: Proper access
+                var productName = $"{groupInfo.CollectionName} - {model.ProductCode}";
                 var formattedContent = $"<p>{model.Content}</p>";
 
                 // Insert into CMSProduct
                 var productQuery = @"INSERT INTO CMSProduct (PID, PDepartmentID, PListType, PCode, PStockCode, 
-                                   PName, PBrand, PInfoPreview, PInfo, PLittlePicture, PMiddlePicture, PBigPicture, 
-                                   PRawPrice, PPrice, PStockAmount, PMinStockAmount, PRealStockAmount, PIsNew, 
-                                   PVatRatio, PDiscountRatio, PVatIncluded, PMoneyTypeID, POrder, PDesi, PSeason, 
-                                   PSeasonDescription, PColorFirst, PColorSecond, PContent, PTechnical, P3D, 
-                                   PSaleStartDate, PSaleFinishDate, PIsNebimIntegration, PVirtualPrice, 
-                                   PIsVirtualPriceEnable, PIsValid, PCreatedDate, PCreatedUserID)
-                                   VALUES (@pid, NULL, '', @pcode, @pcode, @pname, '', @pname, NULL, NULL, NULL, NULL, 
-                                   0.00, 0.00, NULL, NULL, NULL, NULL, 0.00, 0.00, NULL, NULL, NULL, NULL, NULL, 
-                                   NULL, NULL, NULL, @content, NULL, NULL, NULL, NULL, 0, NULL, NULL, @isValid, 
-                                   @createdDate, @userId)";
+                           PName, PBrand, PInfoPreview, PInfo, PLittlePicture, PMiddlePicture, PBigPicture, 
+                           PRawPrice, PPrice, PStockAmount, PMinStockAmount, PRealStockAmount, PIsNew, 
+                           PVatRatio, PDiscountRatio, PVatIncluded, PMoneyTypeID, POrder, PDesi, PSeason, 
+                           PSeasonDescription, PColorFirst, PColorSecond, PContent, PTechnical, P3D, 
+                           PSaleStartDate, PSaleFinishDate, PIsNebimIntegration, PVirtualPrice, 
+                           PIsVirtualPriceEnable, PIsValid, PCreatedDate, PCreatedUserID)
+                           VALUES (@pid, NULL, '', @pcode, @pcode, @pname, '', @pname, NULL, NULL, NULL, NULL, 
+                           0.00, 0.00, NULL, NULL, NULL, NULL, 0.00, 0.00, NULL, NULL, NULL, NULL, NULL, 
+                           NULL, NULL, NULL, @content, NULL, NULL, NULL, NULL, 0, NULL, NULL, @isValid, 
+                           @createdDate, @userId)";
 
                 using var productCommand = new SqlCommand(productQuery, connection, transaction);
                 productCommand.Parameters.AddWithValue("@pid", nextPID);
@@ -959,8 +1033,8 @@ namespace panelOrmo.Services
 
                 // Insert into CMSProductDepartment
                 var deptQuery = @"INSERT INTO CMSProductDepartment (PDID, PDDepartmentID, PDProductID, 
-                                 PDOrder, PDCreatedDate, PDCreatedUserID)
-                                 VALUES (@pdid, @deptId, @productId, 1, @createdDate, @userId)";
+                         PDOrder, PDCreatedDate, PDCreatedUserID)
+                         VALUES (@pdid, @deptId, @productId, 1, @createdDate, @userId)";
 
                 using var deptCommand = new SqlCommand(deptQuery, connection, transaction);
                 deptCommand.Parameters.AddWithValue("@pdid", nextPDID);
@@ -970,10 +1044,53 @@ namespace panelOrmo.Services
                 deptCommand.Parameters.AddWithValue("@userId", userId);
                 await deptCommand.ExecuteNonQueryAsync();
 
-                // Handle image uploads if provided
-                if (model.SmallImage != null || model.MediumImage != null)
+                // Handle multiple image uploads
+                var ftpService = new FTPService(_configuration);
+
+                // Process ImagePairs (new way)
+                if (model.ImagePairs != null && model.ImagePairs.Any())
                 {
-                    var ftpService = new FTPService(_configuration); // FIXED: Now _configuration is available
+                    foreach (var imagePair in model.ImagePairs)
+                    {
+                        if (imagePair.SmallImage != null || imagePair.MediumImage != null)
+                        {
+                            var nextPIID = await GetNextId(connection, "CMSProductImage", "PIID", transaction);
+
+                            string smallImagePath = null, mediumImagePath = null;
+
+                            if (imagePair.SmallImage != null)
+                            {
+                                smallImagePath = await ftpService.UploadFile(imagePair.SmallImage, "/httpdocs/CMSFiles/ProductImages/SmallImage");
+                            }
+
+                            if (imagePair.MediumImage != null)
+                            {
+                                mediumImagePath = await ftpService.UploadFile(imagePair.MediumImage, "/httpdocs/CMSFiles/ProductImages/MediumImage");
+                            }
+
+                            var imageQuery = @"INSERT INTO CMSProductImage (PIID, PIProductID, PIProductVariationID, 
+                                     PIPositionX, PIPositionY, PISmallImage, PIMediumImage, PIBigImage, 
+                                     PIDescription, PIGroup, PIOrder, PIIsValid, PICreatedDate, PICreatedUserID)
+                                     VALUES (@piid, @productId, NULL, NULL, NULL, @smallImage, @mediumImage, '', 
+                                     @description, '', 0, @isValid, @createdDate, @userId)";
+
+                            using var imageCommand = new SqlCommand(imageQuery, connection, transaction);
+                            imageCommand.Parameters.AddWithValue("@piid", nextPIID);
+                            imageCommand.Parameters.AddWithValue("@productId", nextPID);
+                            imageCommand.Parameters.AddWithValue("@smallImage", smallImagePath ?? (object)DBNull.Value);
+                            imageCommand.Parameters.AddWithValue("@mediumImage", mediumImagePath ?? (object)DBNull.Value);
+                            imageCommand.Parameters.AddWithValue("@description", $"{groupInfo.GroupName} - {model.ProductCode}");
+                            imageCommand.Parameters.AddWithValue("@isValid", model.IsActive);
+                            imageCommand.Parameters.AddWithValue("@createdDate", createdDate);
+                            imageCommand.Parameters.AddWithValue("@userId", userId);
+                            await imageCommand.ExecuteNonQueryAsync();
+                        }
+                    }
+                }
+                // Backward compatibility - handle old single image upload
+                else if (model.SmallImage != null || model.MediumImage != null)
+                {
+                    var nextPIID = await GetNextId(connection, "CMSProductImage", "PIID", transaction);
                     string smallImagePath = null, mediumImagePath = null;
 
                     if (model.SmallImage != null)
@@ -986,19 +1103,18 @@ namespace panelOrmo.Services
                         mediumImagePath = await ftpService.UploadFile(model.MediumImage, "/httpdocs/CMSFiles/ProductImages/MediumImage");
                     }
 
-                    // Insert into CMSProductImage
                     var imageQuery = @"INSERT INTO CMSProductImage (PIID, PIProductID, PIProductVariationID, 
-                                     PIPositionX, PIPositionY, PISmallImage, PIMediumImage, PIBigImage, 
-                                     PIDescription, PIGroup, PIOrder, PIIsValid, PICreatedDate, PICreatedUserID)
-                                     VALUES (@piid, @productId, NULL, NULL, NULL, @smallImage, @mediumImage, '', 
-                                     @description, '', 0, @isValid, @createdDate, @userId)";
+                             PIPositionX, PIPositionY, PISmallImage, PIMediumImage, PIBigImage, 
+                             PIDescription, PIGroup, PIOrder, PIIsValid, PICreatedDate, PICreatedUserID)
+                             VALUES (@piid, @productId, NULL, NULL, NULL, @smallImage, @mediumImage, '', 
+                             @description, '', 0, @isValid, @createdDate, @userId)";
 
                     using var imageCommand = new SqlCommand(imageQuery, connection, transaction);
                     imageCommand.Parameters.AddWithValue("@piid", nextPIID);
                     imageCommand.Parameters.AddWithValue("@productId", nextPID);
                     imageCommand.Parameters.AddWithValue("@smallImage", smallImagePath ?? (object)DBNull.Value);
                     imageCommand.Parameters.AddWithValue("@mediumImage", mediumImagePath ?? (object)DBNull.Value);
-                    imageCommand.Parameters.AddWithValue("@description", $"{groupInfo.GroupName} - {model.ProductCode}"); // FIXED: Proper access
+                    imageCommand.Parameters.AddWithValue("@description", $"{groupInfo.GroupName} - {model.ProductCode}");
                     imageCommand.Parameters.AddWithValue("@isValid", model.IsActive);
                     imageCommand.Parameters.AddWithValue("@createdDate", createdDate);
                     imageCommand.Parameters.AddWithValue("@userId", userId);
@@ -1010,6 +1126,7 @@ namespace panelOrmo.Services
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Exception in CreateCollectionProduct");
                 transaction.Rollback();
                 return false;
             }
