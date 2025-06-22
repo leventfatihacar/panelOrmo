@@ -61,9 +61,13 @@ namespace panelOrmo.Controllers
                 return View(model);
             }
 
-            var success = await _databaseService.CreateUser(model, int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"));
-            if (success)
+            var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "";
+
+            var newUserId = await _databaseService.CreateUser(model, currentUserId);
+            if (newUserId.HasValue)
             {
+                await _databaseService.LogActivity(currentUserId, username, "Create User", "Users", newUserId.Value);
                 TempData["Success"] = "User created successfully";
                 return RedirectToAction("Index");
             }

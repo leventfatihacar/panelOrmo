@@ -46,10 +46,10 @@ namespace panelOrmo.Controllers
                 imagePath = await _ftpService.UploadFile(model.Image, "/httpdocs/CMSFiles/Image/Content");
             }
 
-            var success = await _databaseService.CreateNews(model, userId, imagePath);
-            if (success)
+            var newNewsId = await _databaseService.CreateNews(model, userId, imagePath);
+            if (newNewsId.HasValue)
             {
-                await _databaseService.LogActivity(userId, username, "Create News", "CMSContent");
+                await _databaseService.LogActivity(userId, username, "Create News", "CMSContent", newNewsId.Value);
                 TempData["Success"] = "News created successfully";
                 return RedirectToAction("Index");
             }

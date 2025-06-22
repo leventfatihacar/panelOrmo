@@ -80,10 +80,10 @@ namespace panelOrmo.Controllers
                 model.ImagePairs = imagePairs;
             }
 
-            var success = await _databaseService.CreateCollectionProduct(model, userId);
-            if (success)
+            var newProductId = await _databaseService.CreateCollectionProduct(model, userId);
+            if (newProductId.HasValue)
             {
-                await _databaseService.LogActivity(userId, username, "Create Collection Product", "CMSProduct");
+                await _databaseService.LogActivity(userId, username, "Create Collection Product", "CMSProduct", newProductId.Value);
                 TempData["Success"] = "Collection product created successfully";
                 return RedirectToAction("Index");
             }

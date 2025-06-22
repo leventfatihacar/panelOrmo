@@ -77,7 +77,7 @@ namespace panelOrmo.Services
             return users;
         }
 
-        public async Task<bool> CreateUser(UserCreateViewModel model, int createdBy)
+        public async Task<int?> CreateUser(UserCreateViewModel model, int createdBy)
         {
             try
             {
@@ -88,7 +88,8 @@ namespace panelOrmo.Services
 
                 using var connection = new SqlConnection(_connectionString);
                 var query = @"INSERT INTO Users (Username, Password, Email, IsSuperAdmin, IsActive, CreatedDate, CreatedBy, PasswordSalt) 
-                             VALUES (@username, @password, @email, @isSuperAdmin, 1, @createdDate, @createdBy, @passwordSalt)";
+                             VALUES (@username, @password, @email, @isSuperAdmin, 1, @createdDate, @createdBy, @passwordSalt);
+                             SELECT SCOPE_IDENTITY();";
                 using var command = new SqlCommand(query, connection);
                 command.Parameters.AddWithValue("@username", model.Username);
                 command.Parameters.AddWithValue("@password", passwordHash);
@@ -100,23 +101,23 @@ namespace panelOrmo.Services
 
                 await connection.OpenAsync();
                 _logger.LogDebug("Executing user creation query for: {Username}", model.Username);
-                var result = await command.ExecuteNonQueryAsync();
+                var newUserId = await command.ExecuteScalarAsync();
                 
-                if (result > 0)
+                if (newUserId != null)
                 {
                     _logger.LogInformation("Successfully created user: {Username}", model.Username);
-                    return true;
+                    return Convert.ToInt32(newUserId);
                 }
                 else
                 {
                     _logger.LogWarning("User creation failed for {Username}. No rows affected.", model.Username);
-                    return false;
+                    return null;
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Exception during user creation for {Username}", model.Username);
-                return false;
+                return null;
             }
         }
 
@@ -229,7 +230,7 @@ namespace panelOrmo.Services
             return result > 0;
         }
 
-        public async Task<bool> CreateNews(NewsViewModel model, int userId, string imagePath = null)
+        public async Task<int?> CreateNews(NewsViewModel model, int userId, string imagePath = null)
         {
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
@@ -264,7 +265,7 @@ namespace panelOrmo.Services
             command.Parameters.AddWithValue("@createdUserId", userId);
 
             var result = await command.ExecuteNonQueryAsync();
-            return result > 0;
+            return result > 0 ? nextCID : null;
         }
 
         // Collection Management
@@ -406,7 +407,7 @@ namespace panelOrmo.Services
             }
         }
 
-        public async Task<bool> CreateCollection(CollectionViewModel model, int userId, string imagePath = null)
+        public async Task<int?> CreateCollection(CollectionViewModel model, int userId, string imagePath = null)
         {
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
@@ -468,12 +469,12 @@ namespace panelOrmo.Services
                 await uriCommand.ExecuteNonQueryAsync();
 
                 transaction.Commit();
-                return true;
+                return nextDID;
             }
             catch (Exception ex)
             {
                 transaction.Rollback();
-                return false;
+                return null;
             }
         }
 
@@ -629,7 +630,7 @@ namespace panelOrmo.Services
             }
         }
 
-        public async Task<bool> CreateCollectionGroup(CollectionGroupViewModel model, int userId, string imagePath = null)
+        public async Task<int?> CreateCollectionGroup(CollectionGroupViewModel model, int userId, string imagePath = null)
         {
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
@@ -675,13 +676,13 @@ namespace panelOrmo.Services
                 await uriCommand.ExecuteNonQueryAsync();
 
                 transaction.Commit();
-                return true;
+                return nextDID;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Exception in CreateCollectionGroup");
                 transaction.Rollback();
-                return false;
+                return null;
             }
         }
 
@@ -1037,7 +1038,7 @@ namespace panelOrmo.Services
             }
         }
 
-        public async Task<bool> CreateCollectionProduct(CollectionProductViewModel model, int userId)
+        public async Task<int?> CreateCollectionProduct(CollectionProductViewModel model, int userId)
         {
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
@@ -1050,7 +1051,7 @@ namespace panelOrmo.Services
                 if (!groupInfoResult.HasValue)
                 {
                     transaction.Rollback();
-                    return false;
+                    return null;
                 }
 
                 var groupInfo = groupInfoResult.Value;
@@ -1177,13 +1178,13 @@ namespace panelOrmo.Services
                 }
 
                 transaction.Commit();
-                return true;
+                return nextPID;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Exception in CreateCollectionProduct");
                 transaction.Rollback();
-                return false;
+                return null;
             }
         }
 

@@ -64,10 +64,10 @@ namespace panelOrmo.Controllers
                 imagePath = await _ftpService.UploadFile(model.Image, "/httpdocs/CMSFiles/Department/Image");
             }
 
-            var success = await _databaseService.CreateCollectionGroup(model, userId, imagePath);
-            if (success)
+            var newCollectionGroupId = await _databaseService.CreateCollectionGroup(model, userId, imagePath);
+            if (newCollectionGroupId.HasValue)
             {
-                await _databaseService.LogActivity(userId, username, "Create Collection Group", "CMSDepartment");
+                await _databaseService.LogActivity(userId, username, "Create Collection Group", "CMSDepartment", newCollectionGroupId.Value);
                 TempData["Success"] = "Collection group created successfully";
                 return RedirectToAction("Index");
             }
