@@ -333,6 +333,19 @@ namespace panelOrmo.Services
 
             try
             {
+                // Get current name to identify the related CMSBanner record
+                var getNameQuery = "SELECT DName FROM CMSDepartment WHERE DID = @id AND DParentID = -1";
+                using var getNameCmd = new SqlCommand(getNameQuery, connection, transaction);
+                getNameCmd.Parameters.AddWithValue("@id", id);
+                var currentName = await getNameCmd.ExecuteScalarAsync() as string;
+
+                if (string.IsNullOrEmpty(currentName))
+                {
+                    _logger.LogWarning("UpdateCollection: No collection found with ID: {ID}", id);
+                    transaction.Rollback();
+                    return false;
+                }
+
                 // Update CMSDepartment
                 var deptQuery = @"UPDATE CMSDepartment SET 
                                  DLanguageID = @languageId, 
@@ -359,7 +372,7 @@ namespace panelOrmo.Services
                     await deptCommand.ExecuteNonQueryAsync();
                 }
 
-                // Update CMSBanner
+                // Update CMSBanner by matching name
                 var bannerQuery = @"UPDATE CMSBanner SET 
                                    BName = @bname, 
                                    BTitle = @btitle, 
@@ -370,11 +383,11 @@ namespace panelOrmo.Services
                 {
                     bannerQuery += ", BImage = @bimage";
                 }
-                bannerQuery += " WHERE BObjectID = @id"; // Assuming BObjectID stores the collection DID
+                bannerQuery += " WHERE BName = @currentName";
 
                 using (var bannerCommand = new SqlCommand(bannerQuery, connection, transaction))
                 {
-                    bannerCommand.Parameters.AddWithValue("@id", id);
+                    bannerCommand.Parameters.AddWithValue("@currentName", currentName);
                     bannerCommand.Parameters.AddWithValue("@bname", model.Name);
                     bannerCommand.Parameters.AddWithValue("@btitle", model.Name);
                     bannerCommand.Parameters.AddWithValue("@bsummary", model.Summary ?? "");
@@ -441,7 +454,7 @@ namespace panelOrmo.Services
 
                 // Insert into CMSBanner (for banner info)
                 var bannerQuery = @"INSERT INTO CMSBanner (BID, BName, BTitle, BSummary, BContent, BImage, BSecondImage, BThirdImage, BColor, BTypeID, BLanguageID, BMemberID, BMenuID, BMemberGroupID, BDate, BDate2, BStartTime, BEndTime, BDuration, BExternalURL, BOrder, BObjectID, BObjectID2, BObjectID3, BObjectID4, BObjectID5, BIsValid, BCreatedDate, BCreatedUserID)
-                                   VALUES (@bid, @bname, @btitle, @bsummary, '', @bimage, NULL, NULL, '', 2, @languageId, NULL, NULL, NULL, @bdate, @bdate2, NULL, NULL, NULL, '/login', @border, @did, NULL, NULL, NULL, NULL, @isValid, @createdDate, @userId)";
+                                   VALUES (@bid, @bname, @btitle, @bsummary, '', @bimage, NULL, NULL, '', 2, @languageId, NULL, NULL, NULL, @bdate, @bdate2, NULL, NULL, NULL, '/login', @border, NULL, NULL, NULL, NULL, NULL, @isValid, @createdDate, @userId)";
                 using var bannerCommand = new SqlCommand(bannerQuery, connection, transaction);
                 bannerCommand.Parameters.AddWithValue("@bid", nextBID);
                 bannerCommand.Parameters.AddWithValue("@bname", model.Name);
@@ -452,7 +465,6 @@ namespace panelOrmo.Services
                 bannerCommand.Parameters.AddWithValue("@bdate", createdDate);
                 bannerCommand.Parameters.AddWithValue("@bdate2", createdDate.AddYears(4));
                 bannerCommand.Parameters.AddWithValue("@border", nextBOrder);
-                bannerCommand.Parameters.AddWithValue("@did", nextDID);
                 bannerCommand.Parameters.AddWithValue("@isValid", model.IsActive);
                 bannerCommand.Parameters.AddWithValue("@createdDate", createdDate);
                 bannerCommand.Parameters.AddWithValue("@userId", userId);
@@ -474,6 +486,7 @@ namespace panelOrmo.Services
             catch (Exception ex)
             {
                 transaction.Rollback();
+                _logger.LogError(ex, "Exception in CreateCollection: {Error}", ex.Message);
                 return null;
             }
         }
@@ -1240,14 +1253,50 @@ namespace panelOrmo.Services
         public async Task<bool> ToggleCollectionStatus(int collectionId, bool status)
         {
             using var connection = new SqlConnection(_connectionString);
-            var query = "UPDATE CMSBanner SET BIsValid = @status WHERE BID = @id";
-            using var command = new SqlCommand(query, connection);
-            command.Parameters.AddWithValue("@status", status);
-            command.Parameters.AddWithValue("@id", collectionId);
-
             await connection.OpenAsync();
-            var result = await command.ExecuteNonQueryAsync();
-            return result > 0;
+            using var transaction = connection.BeginTransaction();
+
+            try
+            {
+                // Get the department name first
+                var getNameQuery = "SELECT DName FROM CMSDepartment WHERE DID = @id AND DParentID = -1";
+                using var getNameCmd = new SqlCommand(getNameQuery, connection, transaction);
+                getNameCmd.Parameters.AddWithValue("@id", collectionId);
+                var deptName = await getNameCmd.ExecuteScalarAsync() as string;
+
+                if (string.IsNullOrEmpty(deptName))
+                {
+                    transaction.Rollback();
+                    return false;
+                }
+
+                // Update CMSDepartment
+                var deptQuery = "UPDATE CMSDepartment SET DIsValid = @status WHERE DID = @id AND DParentID = -1";
+                using (var deptCommand = new SqlCommand(deptQuery, connection, transaction))
+                {
+                    deptCommand.Parameters.AddWithValue("@status", status);
+                    deptCommand.Parameters.AddWithValue("@id", collectionId);
+                    await deptCommand.ExecuteNonQueryAsync();
+                }
+
+                // Update CMSBanner by matching name
+                var bannerQuery = "UPDATE CMSBanner SET BIsValid = @status WHERE BName = @name";
+                using (var bannerCommand = new SqlCommand(bannerQuery, connection, transaction))
+                {
+                    bannerCommand.Parameters.AddWithValue("@status", status);
+                    bannerCommand.Parameters.AddWithValue("@name", deptName);
+                    await bannerCommand.ExecuteNonQueryAsync();
+                }
+
+                transaction.Commit();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                _logger.LogError(ex, "Exception in ToggleCollectionStatus for ID: {ID}", collectionId);
+                return false;
+            }
         }
 
         // Audit Log Methods
@@ -1334,6 +1383,19 @@ namespace panelOrmo.Services
             using var transaction = connection.BeginTransaction();
             try
             {
+                // Get the department name first
+                var getNameQuery = "SELECT DName FROM CMSDepartment WHERE DID = @id AND DParentID = -1";
+                using var getNameCmd = new SqlCommand(getNameQuery, connection, transaction);
+                getNameCmd.Parameters.AddWithValue("@id", id);
+                var deptName = await getNameCmd.ExecuteScalarAsync() as string;
+
+                if (string.IsNullOrEmpty(deptName))
+                {
+                    _logger.LogWarning("DeleteCollection: No collection found with ID: {ID}", id);
+                    transaction.Rollback();
+                    return false;
+                }
+
                 // Delete from CMSURIMapping
                 var uriQuery = "DELETE FROM CMSURIMapping WHERE UMTable = 'CMSDepartment' AND UMObjectID = @id";
                 using (var uriCommand = new SqlCommand(uriQuery, connection, transaction))
@@ -1352,13 +1414,13 @@ namespace panelOrmo.Services
                     _logger.LogDebug("DeleteCollection CMSDepartment result for DID {DID}: {Result}", id, deptResult);
                 }
 
-                // Delete from CMSBanner (banner info)
-                var bannerQuery = "DELETE FROM CMSBanner WHERE BID = @id";
+                // Delete from CMSBanner by matching name
+                var bannerQuery = "DELETE FROM CMSBanner WHERE BName = @name";
                 using (var bannerCommand = new SqlCommand(bannerQuery, connection, transaction))
                 {
-                    bannerCommand.Parameters.AddWithValue("@id", id);
+                    bannerCommand.Parameters.AddWithValue("@name", deptName);
                     var bannerResult = await bannerCommand.ExecuteNonQueryAsync();
-                    _logger.LogDebug("DeleteCollection CMSBanner result for BID {BID}: {Result}", id, bannerResult);
+                    _logger.LogDebug("DeleteCollection CMSBanner result for BName {Name}: {Result}", deptName, bannerResult);
                 }
 
                 transaction.Commit();
