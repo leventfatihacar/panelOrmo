@@ -64,21 +64,6 @@
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-info text-white">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <h3 class="mb-0">@Model.Count(n => n.CLanguageID == 1)</h3>
-                        <p class="mb-0">Turkish Articles</p>
-                    </div>
-                    <div class="ms-3">
-                        <i class="fas fa-language fa-2x opacity-75"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 <!-- Filters and Search -->
@@ -130,15 +115,6 @@
             <button class="btn btn-outline-primary btn-sm" onclick="location.reload()">
                 <i class="fas fa-sync-alt me-1"></i>Refresh
             </button>
-            <div class="dropdown">
-                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                    <i class="fas fa-download me-1"></i>Export
-                </button>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="#"><i class="fas fa-file-csv me-2"></i>Export CSV</a></li>
-                    <li><a class="dropdown-item" href="#"><i class="fas fa-file-excel me-2"></i>Export Excel</a></li>
-                </ul>
-            </div>
         </div>
     </div>
     <div class="card-body p-0">
@@ -202,9 +178,6 @@
                                     <a href="/News/Edit/@news.CID" class="btn btn-outline-primary" title="Edit">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <button class="btn btn-outline-info" onclick="viewNews(@news.CID)" title="View">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
                                     <button class="btn btn-outline-@(news.CIsValid ? "warning" : "success")"
                                             onclick="toggleStatus(@news.CID, @news.CIsValid.ToString().ToLower())"
                                             title="@(news.CIsValid ? "Deactivate" : "Activate")">
@@ -285,11 +258,6 @@
                     alert('Error deleting news article');
                 });
             }
-        }
-
-        function viewNews(id) {
-            // Add view functionality here
-            window.open('/News/Details/' + id, '_blank');
         }
 
         // Search and filter functionality

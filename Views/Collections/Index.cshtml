@@ -64,21 +64,6 @@
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-info text-white">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <h3 class="mb-0">@Model.Count(c => c.DLanguageID == 1)</h3>
-                        <p class="mb-0">Turkish Collections</p>
-                    </div>
-                    <div class="ms-3">
-                        <i class="fas fa-language fa-2x opacity-75"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 <!-- Filters -->
@@ -139,7 +124,6 @@
                     <tr>
                         <th width="80">ID</th>
                         <th>Name</th>
-                        <th>Summary</th>
                         <th width="120">Language</th>
                         <th width="120">Status</th>
                         <th width="150">Created Date</th>
@@ -154,7 +138,6 @@
                             <td>
                                 <div class="fw-bold">@collection.DName</div>
                             </td>
-                            <td>@collection.DSummary</td>
                             <td>
                                 @if (collection.DLanguageID == 1)
                                 {
