@@ -111,7 +111,7 @@
                                 {
                                     @foreach (var collection in collections)
                                     {
-                                        <option value="@collection.DID">@collection.DName</option>
+                                        <option value="@collection.DID">@collection.DName @(collection.DLanguageID == 1 ? "- tr" : "- en")</option>
                                     }
                                 }
                             </select>

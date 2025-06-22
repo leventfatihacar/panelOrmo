@@ -176,7 +176,7 @@
                                 {
                                     @foreach (var group in collectionGroups)
                                     {
-                                        <option value="@group.DID">@group.DName</option>
+                                        <option value="@group.DID">@group.DName @(group.DLanguageID == 1 ? "- tr" : "- en")</option>
                                     }
                                 }
                             </select>
