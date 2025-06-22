@@ -43,7 +43,7 @@ namespace panelOrmo.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(UserCreateViewModel model)
         {
-            if (!User.HasClaim(c => c.Type == ClaimTypes.Role && c.Value == "SuperAdmin"))
+            if (!User.HasClaim("IsSuperAdmin", "True"))
             {
                 return Forbid();
             }
@@ -74,8 +74,14 @@ namespace panelOrmo.Controllers
             }
         }
 
+        public class ChangePasswordModel
+        {
+            public int UserId { get; set; }
+            public string NewPassword { get; set; }
+        }
+
         [HttpPost]
-        public async Task<IActionResult> ChangePassword(int userId, string newPassword)
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordModel model)
         {
             if (!User.HasClaim("IsSuperAdmin", "True"))
             {
@@ -85,10 +91,10 @@ namespace panelOrmo.Controllers
             var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "";
 
-            var success = await _databaseService.ChangeUserPassword(userId, newPassword);
+            var success = await _databaseService.ChangeUserPassword(model.UserId, model.NewPassword);
             if (success)
             {
-                await _databaseService.LogActivity(currentUserId, username, "Change User Password", "Users", userId);
+                await _databaseService.LogActivity(currentUserId, username, "Change User Password", "Users", model.UserId);
                 return Json(new { success = true });
             }
 

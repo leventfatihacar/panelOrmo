@@ -3,6 +3,8 @@ using panelOrmo.Models;
 using System.Data;
 using System.Data.SqlClient;
 using Microsoft.Extensions.Logging;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace panelOrmo.Services
 {
@@ -23,24 +25,29 @@ namespace panelOrmo.Services
         public async Task<User> ValidateUser(string username, string password)
         {
             using var connection = new SqlConnection(_connectionString);
-            var query = "SELECT * FROM Users WHERE Username = @username AND Password = @password AND IsActive = 1";
+            var query = "SELECT * FROM Users WHERE Username = @username AND IsActive = 1";
             using var command = new SqlCommand(query, connection);
             command.Parameters.AddWithValue("@username", username);
-            command.Parameters.AddWithValue("@password", password); // In production, use hashed passwords
-
+            
             await connection.OpenAsync();
             using var reader = await command.ExecuteReaderAsync();
 
             if (await reader.ReadAsync())
             {
-                return new User
+                var storedHash = reader.GetString("Password");
+                var storedSalt = reader.GetString("PasswordSalt");
+
+                if (VerifyPasswordHash(password, storedHash, storedSalt))
                 {
-                    Id = reader.GetInt32("Id"),
-                    Username = reader.GetString("Username"),
-                    Email = reader.GetString("Email"),
-                    IsSuperAdmin = reader.GetBoolean("IsSuperAdmin"),
-                    IsActive = reader.GetBoolean("IsActive")
-                };
+                    return new User
+                    {
+                        Id = reader.GetInt32("Id"),
+                        Username = reader.GetString("Username"),
+                        Email = reader.GetString("Email"),
+                        IsSuperAdmin = reader.GetBoolean("IsSuperAdmin"),
+                        IsActive = reader.GetBoolean("IsActive")
+                    };
+                }
             }
             return null;
         }
@@ -74,27 +81,41 @@ namespace panelOrmo.Services
         {
             try
             {
-                _logger.LogDebug("CreateUser called with Username: {Username}, Email: {Email}, IsSuperAdmin: {IsSuperAdmin}, CreatedBy: {CreatedBy}", model.Username, model.Email, model.IsSuperAdmin, createdBy);
+                _logger.LogInformation("Attempting to create user: {Username}", model.Username);
+                
+                CreatePasswordHash(model.Password, out string passwordHash, out string passwordSalt);
+                _logger.LogDebug("Password hash and salt generated for user: {Username}", model.Username);
+
                 using var connection = new SqlConnection(_connectionString);
-                var query = @"INSERT INTO Users (Username, Password, Email, IsSuperAdmin, IsActive, CreatedDate, CreatedBy) 
-                             VALUES (@username, @password, @email, @isSuperAdmin, 1, @createdDate, @createdBy)";
+                var query = @"INSERT INTO Users (Username, Password, Email, IsSuperAdmin, IsActive, CreatedDate, CreatedBy, PasswordSalt) 
+                             VALUES (@username, @password, @email, @isSuperAdmin, 1, @createdDate, @createdBy, @passwordSalt)";
                 using var command = new SqlCommand(query, connection);
                 command.Parameters.AddWithValue("@username", model.Username);
-                command.Parameters.AddWithValue("@password", model.Password); // In production, hash the password
+                command.Parameters.AddWithValue("@password", passwordHash);
                 command.Parameters.AddWithValue("@email", model.Email);
                 command.Parameters.AddWithValue("@isSuperAdmin", model.IsSuperAdmin);
                 command.Parameters.AddWithValue("@createdDate", DateTime.Now);
                 command.Parameters.AddWithValue("@createdBy", createdBy);
+                command.Parameters.AddWithValue("@passwordSalt", passwordSalt);
 
                 await connection.OpenAsync();
-                _logger.LogDebug("SQL Connection opened and command prepared.");
+                _logger.LogDebug("Executing user creation query for: {Username}", model.Username);
                 var result = await command.ExecuteNonQueryAsync();
-                _logger.LogDebug("SQL ExecuteNonQueryAsync result: {Result}", result);
-                return result > 0;
+                
+                if (result > 0)
+                {
+                    _logger.LogInformation("Successfully created user: {Username}", model.Username);
+                    return true;
+                }
+                else
+                {
+                    _logger.LogWarning("User creation failed for {Username}. No rows affected.", model.Username);
+                    return false;
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Exception in CreateUser");
+                _logger.LogError(ex, "Exception during user creation for {Username}", model.Username);
                 return false;
             }
         }
@@ -1187,10 +1208,13 @@ namespace panelOrmo.Services
         // User Management
         public async Task<bool> ChangeUserPassword(int userId, string newPassword)
         {
+            CreatePasswordHash(newPassword, out string passwordHash, out string passwordSalt);
+
             using var connection = new SqlConnection(_connectionString);
-            var query = "UPDATE Users SET Password = @password WHERE Id = @userId";
+            var query = "UPDATE Users SET Password = @password, PasswordSalt = @passwordSalt WHERE Id = @userId";
             using var command = new SqlCommand(query, connection);
-            command.Parameters.AddWithValue("@password", newPassword); // In production, hash the password
+            command.Parameters.AddWithValue("@password", passwordHash);
+            command.Parameters.AddWithValue("@passwordSalt", passwordSalt);
             command.Parameters.AddWithValue("@userId", userId);
 
             await connection.OpenAsync();
@@ -1389,6 +1413,37 @@ namespace panelOrmo.Services
             await connection.OpenAsync();
             var result = await command.ExecuteNonQueryAsync();
             return result > 0;
+        }
+
+        // Password Hashing
+        private void CreatePasswordHash(string password, out string passwordHash, out string passwordSalt)
+        {
+            byte[] salt = new byte[16];
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(salt);
+            }
+
+            var pbkdf2 = new Rfc2898DeriveBytes(password, salt, 10000, HashAlgorithmName.SHA256);
+            byte[] hash = pbkdf2.GetBytes(20);
+
+            passwordHash = Convert.ToBase64String(hash);
+            passwordSalt = Convert.ToBase64String(salt);
+        }
+
+        private bool VerifyPasswordHash(string password, string storedHash, string storedSalt)
+        {
+            byte[] salt = Convert.FromBase64String(storedSalt);
+            var pbkdf2 = new Rfc2898DeriveBytes(password, salt, 10000, HashAlgorithmName.SHA256);
+            byte[] hash = pbkdf2.GetBytes(20);
+
+            return Convert.ToBase64String(hash) == storedHash;
+        }
+
+        public (string, string) GetHashAndSalt(string password)
+        {
+            CreatePasswordHash(password, out string hash, out string salt);
+            return (hash, salt);
         }
     }
 }
