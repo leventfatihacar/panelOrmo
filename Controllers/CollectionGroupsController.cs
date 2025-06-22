@@ -25,12 +25,13 @@ namespace panelOrmo.Controllers
             var collections = await _databaseService.GetAllCollections();
 
             var viewModel = from g in groups
-                            join c in collections on g.DParentID equals c.DID
+                            join c in collections on g.DParentID equals c.DID into collectionJoin
+                            from c in collectionJoin.DefaultIfEmpty()
                             select new CollectionGroupIndexViewModel
                             {
                                 DID = g.DID,
                                 DName = g.DName,
-                                ParentCollectionName = c.DName,
+                                ParentCollectionName = c != null ? c.DName : "No Parent Collection",
                                 DLanguageID = g.DLanguageID,
                                 DIsValid = g.DIsValid,
                                 DCreatedDate = g.DCreatedDate

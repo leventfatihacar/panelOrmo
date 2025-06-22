@@ -20,7 +20,7 @@ namespace panelOrmo.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var products = await _databaseService.GetAllCollectionProducts();
+            var products = await _databaseService.GetAllCollectionProductsWithGroups();
             return View(products.OrderByDescending(p => p.PCreatedDate).ToList());
         }
 

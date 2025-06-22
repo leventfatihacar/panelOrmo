@@ -669,11 +669,10 @@ namespace panelOrmo.Services
         {
             var products = new List<CollectionProduct>();
             using var connection = new SqlConnection(_connectionString);
-            var query = @"SELECT PID, PCode, PName, PInfoPreview, PContent, PIsValid, 
-                     PCreatedDate, PCreatedUserID 
-                     FROM CMSProduct 
-                     WHERE PCode IS NOT NULL AND PCode != '' 
-                     ORDER BY PCreatedDate DESC";
+            var query = @"SELECT P.PID, P.PCode, P.PName, P.PInfoPreview, P.PContent, P.PIsValid, 
+                         P.PCreatedDate, P.PCreatedUserID
+                         FROM CMSProduct P 
+                         ORDER BY P.PCreatedDate DESC";
             using var command = new SqlCommand(query, connection);
 
             await connection.OpenAsync();
@@ -684,13 +683,48 @@ namespace panelOrmo.Services
                 products.Add(new CollectionProduct
                 {
                     PID = reader.GetInt32("PID"),
-                    PCode = reader.IsDBNull("PCode") ? "" : reader.GetString("PCode"),
+                    PCode = reader.GetString("PCode"),
                     PName = reader.GetString("PName"),
-                    PInfoPreview = reader.IsDBNull("PInfoPreview") ? null : reader.GetString("PInfoPreview"),
-                    PContent = reader.IsDBNull("PContent") ? null : reader.GetString("PContent"),
-                    PIsValid = reader.IsDBNull("PIsValid") ? true : reader.GetBoolean("PIsValid"),
+                    PInfoPreview = reader.IsDBNull("PInfoPreview") ? "" : reader.GetString("PInfoPreview"),
+                    PContent = reader.IsDBNull("PContent") ? "" : reader.GetString("PContent"),
+                    PIsValid = reader.GetBoolean("PIsValid"),
                     PCreatedDate = reader.GetDateTime("PCreatedDate"),
                     PCreatedUserID = reader.IsDBNull("PCreatedUserID") ? null : reader.GetInt32("PCreatedUserID")
+                });
+            }
+            return products;
+        }
+
+        public async Task<List<CollectionProductIndexViewModel>> GetAllCollectionProductsWithGroups()
+        {
+            var products = new List<CollectionProductIndexViewModel>();
+            using var connection = new SqlConnection(_connectionString);
+            var query = @"SELECT P.PID, P.PCode, P.PName, P.PIsValid, P.PCreatedDate, G.ParentCollectionGroupName
+                            FROM CMSProduct P
+                            OUTER APPLY (
+                                SELECT TOP 1 D.DName AS ParentCollectionGroupName
+                                FROM CMSProductDepartment PD
+                                JOIN CMSDepartment D ON PD.PDDepartmentID = D.DID
+                                WHERE PD.PDProductID = P.PID
+                                ORDER BY PD.PDDepartmentID
+                            ) G
+                            ORDER BY P.PCreatedDate DESC";
+
+            using var command = new SqlCommand(query, connection);
+
+            await connection.OpenAsync();
+            using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                products.Add(new CollectionProductIndexViewModel
+                {
+                    PID = reader.GetInt32("PID"),
+                    PCode = reader.GetString("PCode"),
+                    PName = reader.GetString("PName"),
+                    ParentCollectionGroupName = reader.IsDBNull("ParentCollectionGroupName") ? "No Parent Group" : reader.GetString("ParentCollectionGroupName"),
+                    PIsValid = reader.GetBoolean("PIsValid"),
+                    PCreatedDate = reader.GetDateTime("PCreatedDate")
                 });
             }
             return products;
