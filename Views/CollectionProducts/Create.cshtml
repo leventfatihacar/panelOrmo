@@ -21,9 +21,9 @@
         overflow: hidden;
     }
 
-        .image-pair:hover {
-            border-color: #007bff;
-        }
+    .image-pair:hover {
+        border-color: #007bff;
+    }
 
     .image-pair-header {
         background: #f8f9fa;
@@ -60,26 +60,26 @@
         position: relative;
     }
 
-        .image-input-label:hover {
-            background: #e9ecef;
-            border-color: #007bff;
-        }
+    .image-input-label:hover {
+        background: #e9ecef;
+        border-color: #007bff;
+    }
 
-        .image-input-label i {
-            font-size: 1.2rem;
-            color: #6c757d;
-            margin-bottom: 4px;
-            pointer-events: none;
-        }
+    .image-input-label i {
+        font-size: 1.2rem;
+        color: #6c757d;
+        margin-bottom: 4px;
+        pointer-events: none;
+    }
 
-        .image-input-label:hover i {
-            color: #007bff;
-        }
+    .image-input-label:hover i {
+        color: #007bff;
+    }
 
-        .image-input-label span {
-            pointer-events: none;
-        }
-
+    .image-input-label span {
+        pointer-events: none;
+    }
+    
     .file-input {
         position: absolute;
         top: 0;
@@ -89,6 +89,23 @@
         opacity: 0;
         cursor: pointer;
         z-index: 1;
+    }
+
+    .upload-header {
+        background: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        border-radius: 9px 9px 0 0;
+        padding: 12px 15px;
+        margin: -1px -1px 15px -1px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .upload-header h6 {
+        color: #495057;
+        font-weight: 600;
+        margin: 0;
     }
 
     .add-image-btn {
@@ -102,10 +119,10 @@
         transition: all 0.2s ease;
     }
 
-        .add-image-btn:hover {
-            background: #0056b3;
-        }
-
+    .add-image-btn:hover {
+        background: #0056b3;
+    }
+    
     .remove-pair-btn {
         background: #dc3545;
         border: none;
@@ -120,178 +137,163 @@
         font-size: 0.75rem;
     }
 
-        .remove-pair-btn:hover {
-            background: #c82333;
-        }
-
-    .upload-header {
-        background: #f8f9fa;
-        border-bottom: 1px solid #dee2e6;
-        border-radius: 9px 9px 0 0;
-        padding: 12px 15px;
-        margin: -1px -1px 15px -1px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+    .remove-pair-btn:hover {
+        background: #c82333;
     }
-
-        .upload-header h6 {
-            color: #495057;
-            font-weight: 600;
-            margin: 0;
-        }
-
+    
     .file-selected {
         background: #d4edda !important;
         border-color: #28a745 !important;
         color: #155724;
     }
 
-        .file-selected i {
-            color: #28a745 !important;
-        }
+    .file-selected i {
+        color: #28a745 !important;
+    }
 </style>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Create Collection Product</h2>
-    <a href="/CollectionProducts" class="btn btn-secondary">
-        <i class="fas fa-arrow-left me-2"></i>Back to List
-    </a>
-</div>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center pb-2 mb-4 border-bottom">
+        <h2 class="mb-0">Create Collection Product</h2>
+        <a href="/CollectionProducts/Index" class="btn btn-sm btn-outline-secondary">Back to List</a>
+    </div>
 
-<form action="/CollectionProducts/Create" method="post" enctype="multipart/form-data" id="productForm">
-    <div class="row">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label for="ProductCode" class="form-label">Product Code *</label>
-                        <input name="ProductCode" id="ProductCode" class="form-control" placeholder="Enter product code" required />
-                    </div>
+    <form action="/CollectionProducts/Create" method="post" enctype="multipart/form-data" id="productForm">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="ProductCode" class="form-label">Product Code *</label>
+                            <input name="ProductCode" id="ProductCode" class="form-control" placeholder="Enter product code" required />
+                        </div>
 
-                    <div class="mb-3">
-                        <label for="CollectionGroupID" class="form-label">Collection Group *</label>
-                        <select name="CollectionGroupID" id="CollectionGroupID" class="form-select" required>
-                            <option value="">Select Collection Group</option>
-                            @if (collectionGroups != null)
-                            {
-                                @foreach (var group in collectionGroups)
+                        <div class="mb-3">
+                            <label for="CollectionGroupID" class="form-label">Collection Group *</label>
+                            <select name="CollectionGroupID" id="CollectionGroupID" class="form-select" required>
+                                <option value="">Select Collection Group</option>
+                                @if (collectionGroups != null)
                                 {
-                                    <option value="@group.DID">@group.DName</option>
+                                    @foreach (var group in collectionGroups)
+                                    {
+                                        <option value="@group.DID">@group.DName</option>
+                                    }
                                 }
-                            }
-                        </select>
-                    </div>
+                            </select>
+                        </div>
 
-                    <div class="mb-3">
-                        <label for="Content" class="form-label">Product Content *</label>
-                        <textarea name="Content" id="Content" class="form-control" rows="5" placeholder="Enter product details and ingredients" required></textarea>
-                        <div class="form-text">Content will be automatically wrapped in &lt;p&gt; tags</div>
+                        <div class="mb-3">
+                            <label for="Content" class="form-label">Product Content *</label>
+                            <textarea name="Content" id="Content" class="form-control" rows="5" placeholder="Enter product details and ingredients" required></textarea>
+                            <div class="form-text">Content will be automatically wrapped in &lt;p&gt; tags</div>
+                        </div>
                     </div>
+                </div>
+            </div>
 
-                    <div class="mb-3">
+            <div class="col-md-4">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">Properties</h6>
+                    </div>
+                    <div class="card-body">
                         <div class="form-check">
                             <input name="IsActive" id="IsActive" class="form-check-input" type="checkbox" value="true" checked />
                             <input type="hidden" name="IsActive" value="false" />
-                            <label for="IsActive" class="form-check-label">
-                                Active
-                            </label>
+                            <label for="IsActive" class="form-check-label">Active</label>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
+                <div class="card image-upload-section">
+                    <div class="upload-header">
+                        <h6>Product Images</h6>
+                        <button type="button" class="add-image-btn" onclick="addImagePair()">
+                            <i class="fas fa-plus me-1"></i>Add Pair
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div>
+                            <div id="imagePairsContainer">
+                                <!-- Initial new image pair -->
+                                <div class="image-pair mb-2 p-2" data-index="0">
+                                    <div class="image-pair-header">
+                                        <span>New Pair 1</span>
+                                        <button type="button" class="remove-pair-btn d-none" onclick="removeImagePair(this)">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
 
-        <div class="col-md-4">
-            <div class="card image-upload-section">
-                <div class="upload-header">
-                    <h6>Product Images</h6>
-                    <button type="button" class="add-image-btn" onclick="addImagePair()">
-                        <i class="fas fa-plus me-1"></i>Add Pair
-                    </button>
-                </div>
-                <div class="card-body">
-                    <div>
-                        <h6 class="text-muted mb-2"><i class="fas fa-plus-circle me-1"></i>Add New Images</h6>
-                        <div id="imagePairsContainer">
-                            <!-- Initial new image pair -->
-                            <div class="image-pair mb-2 p-2" data-index="0">
-                                <div class="image-pair-header">
-                                    <span>New Pair 1</span>
-                                    <button type="button" class="remove-pair-btn d-none" onclick="removeImagePair(this)">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
+                                    <div class="image-input-group">
+                                        <label class="image-input-label" for="new-small-0">
+                                            <i class="fas fa-image"></i>
+                                            <span class="small">Small Image</span>
+                                            <input name="ImagePairs[0].SmallImage" id="new-small-0" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />
+                                        </label>
+                                    </div>
 
-                                <div class="image-input-group">
-                                    <label class="image-input-label" for="new-small-0">
-                                        <i class="fas fa-image"></i>
-                                        <span class="small">Small Image</span>
-                                        <input name="ImagePairs[0].SmallImage" id="new-small-0" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />
-                                    </label>
-                                </div>
-
-                                <div class="image-input-group">
-                                    <label class="image-input-label" for="new-medium-0">
-                                        <i class="fas fa-image"></i>
-                                        <span class="small">Medium Image</span>
-                                        <input name="ImagePairs[0].MediumImage" id="new-medium-0" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />
-                                    </label>
+                                    <div class="image-input-group">
+                                        <label class="image-input-label" for="new-medium-0">
+                                            <i class="fas fa-image"></i>
+                                            <span class="small">Medium Image</span>
+                                            <input name="ImagePairs[0].MediumImage" id="new-medium-0" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="text-center mt-2">
-                            <small class="text-muted">
-                                <i class="fas fa-info-circle me-1"></i>
-                                At least one image must be uploaded
-                            </small>
+                            <div class="text-center mt-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    At least one image must be uploaded
+                                </small>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="d-flex gap-2 mt-3">
-        <button type="submit" class="btn btn-primary">
-            <i class="fas fa-save me-2"></i>Create Product
-        </button>
-        <a href="/CollectionProducts" class="btn btn-secondary">Cancel</a>
-    </div>
-</form>
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Create Product</button>
+            <a href="/CollectionProducts/Index" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
 
+@section Scripts {
 <script>
     let imagePairIndex = 1;
 
     function addImagePair() {
         const container = document.getElementById('imagePairsContainer');
-        const pairCount = container.children.length + 1;
+        const pairCount = container.children.length;
+        const newIndex = imagePairIndex;
 
         const newPair = document.createElement('div');
         newPair.className = 'image-pair mb-2 p-2';
-        newPair.setAttribute('data-index', imagePairIndex);
+        newPair.setAttribute('data-index', newIndex);
 
-        newPair.innerHTML = '<div class="image-pair-header">' +
-            '<span>New Pair ' + pairCount + '</span>' +
-            '<button type="button" class="remove-pair-btn" onclick="removeImagePair(this)">' +
-            '<i class="fas fa-times"></i>' +
-            '</button>' +
-            '</div>' +
-            '<div class="image-input-group">' +
-            '<label class="image-input-label" for="new-small-' + imagePairIndex + '">' +
-            '<i class="fas fa-image"></i>' +
-            '<span class="small">Small Image</span>' +
-            '<input name="ImagePairs[' + imagePairIndex + '].SmallImage" id="new-small-' + imagePairIndex + '" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />' +
-            '</label>' +
-            '</div>' +
-            '<div class="image-input-group">' +
-            '<label class="image-input-label" for="new-medium-' + imagePairIndex + '">' +
-            '<i class="fas fa-image"></i>' +
-            '<span class="small">Medium Image</span>' +
-            '<input name="ImagePairs[' + imagePairIndex + '].MediumImage" id="new-medium-' + imagePairIndex + '" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />' +
-            '</label>' +
-            '</div>';
+        newPair.innerHTML = 
+            `<div class="image-pair-header">
+                <span>New Pair ${pairCount + 1}</span>
+                <button type="button" class="remove-pair-btn" onclick="removeImagePair(this)">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="image-input-group">
+                <label class="image-input-label" for="new-small-${newIndex}">
+                    <i class="fas fa-image"></i>
+                    <span class="small">Small Image</span>
+                    <input name="ImagePairs[${newIndex}].SmallImage" id="new-small-${newIndex}" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />
+                </label>
+            </div>
+            <div class="image-input-group">
+                <label class="image-input-label" for="new-medium-${newIndex}">
+                    <i class="fas fa-image"></i>
+                    <span class="small">Medium Image</span>
+                    <input name="ImagePairs[${newIndex}].MediumImage" id="new-medium-${newIndex}" type="file" class="file-input" accept="image/jpeg" onchange="handleFileSelect(this)" />
+                </label>
+            </div>`;
 
         container.appendChild(newPair);
         imagePairIndex++;
@@ -306,36 +308,22 @@
     }
 
     function renumberImagePairs() {
-        const pairs = document.querySelectorAll('.image-pair');
+        const pairs = document.querySelectorAll('#imagePairsContainer .image-pair');
         pairs.forEach((pair, index) => {
             const title = pair.querySelector('.image-pair-header span');
-            title.textContent = 'New Pair ' + (index + 1);
-
-            const smallImageInput = pair.querySelector('input[type="file"]:first-of-type');
-            const mediumImageInput = pair.querySelector('input[type="file"]:last-of-type');
-
-            smallImageInput.name = 'ImagePairs[' + index + '].SmallImage';
-            mediumImageInput.name = 'ImagePairs[' + index + '].MediumImage';
-            smallImageInput.id = 'new-small-' + index;
-            mediumImageInput.id = 'new-medium-' + index;
-
-            const labels = pair.querySelectorAll('label');
-            labels[0].setAttribute('for', 'new-small-' + index);
-            labels[1].setAttribute('for', 'new-medium-' + index);
-
-            pair.setAttribute('data-index', index);
+            title.textContent = `New Pair ${index + 1}`;
+            
+            // Note: We don't re-index the inputs. The model binder can handle non-sequential indexes.
+            // This simplifies the logic significantly and avoids issues with file selections being lost.
         });
     }
 
     function updateRemoveButtons() {
-        const pairs = document.querySelectorAll('.image-pair');
-        const removeButtons = document.querySelectorAll('.image-pair .remove-pair-btn');
-
-        removeButtons.forEach((button, index) => {
-            if (pairs.length > 1) {
-                button.classList.remove('d-none');
-            } else {
-                button.classList.add('d-none');
+        const pairs = document.querySelectorAll('#imagePairsContainer .image-pair');
+        pairs.forEach(pair => {
+            const removeBtn = pair.querySelector('.remove-pair-btn');
+            if (removeBtn) {
+                removeBtn.classList.toggle('d-none', pairs.length <= 1);
             }
         });
     }
@@ -343,46 +331,46 @@
     function handleFileSelect(input) {
         const label = input.closest('.image-input-label');
         const fileName = input.files[0] ? input.files[0].name : null;
+        const span = label.querySelector('span');
+        const icon = label.querySelector('i');
 
         if (fileName) {
             label.classList.add('file-selected');
-            const span = label.querySelector('span');
             if (span) {
                 span.textContent = 'Selected: ' + (fileName.length > 15 ? fileName.substring(0, 15) + '...' : fileName);
             }
-
-            const icon = label.querySelector('i');
             icon.className = 'fas fa-check-circle';
         } else {
             label.classList.remove('file-selected');
-            const span = label.querySelector('span');
             if (span) {
                 span.textContent = span.textContent.includes('Small') ? 'Small Image' : 'Medium Image';
             }
-
-            const icon = label.querySelector('i');
             icon.className = 'fas fa-image';
         }
     }
 
-    // Form validation
-    document.getElementById('productForm').addEventListener('submit', function(e) {
-        const pairs = document.querySelectorAll('.image-pair');
-        let hasValidPair = false;
+    document.addEventListener('DOMContentLoaded', function() {
+        updateRemoveButtons();
 
-        pairs.forEach(pair => {
-            const smallImage = pair.querySelector('input[type="file"]:first-of-type');
-            const mediumImage = pair.querySelector('input[type="file"]:last-of-type');
+        document.getElementById('productForm').addEventListener('submit', function(e) {
+            const pairs = document.querySelectorAll('#imagePairsContainer .image-pair');
+            let hasAtLeastOneImage = false;
 
-            if (smallImage.files.length > 0 || mediumImage.files.length > 0) {
-                hasValidPair = true;
+            if (pairs.length > 0) {
+                const firstPair = pairs[0];
+                const smallImage = firstPair.querySelector('input[name="ImagePairs[0].SmallImage"]');
+                const mediumImage = firstPair.querySelector('input[name="ImagePairs[0].MediumImage"]');
+                if ((smallImage && smallImage.files.length > 0) || (mediumImage && mediumImage.files.length > 0)) {
+                    hasAtLeastOneImage = true;
+                }
+            }
+            
+            // This is a simple check. A more robust check might be needed.
+            if (!hasAtLeastOneImage) {
+                 e.preventDefault();
+                 alert('Please upload at least one image (small or medium) in the first image pair.');
             }
         });
-
-        if (!hasValidPair) {
-            e.preventDefault();
-            alert('Please upload at least one image (small or medium) in the first image pair.');
-            return false;
-        }
     });
 </script>
+}

@@ -4,69 +4,178 @@
     Layout = "_Layout";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Create Collection</h2>
-    <a href="/Collections" class="btn btn-secondary">
-        <i class="fas fa-arrow-left me-2"></i>Back to List
-    </a>
-</div>
+<style>
+    .image-upload-section {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+    }
 
-<div class="card">
-    <div class="card-body">
-        <form action="/Collections/Create" method="post" enctype="multipart/form-data">
-            <div class="row">
-                <div class="col-md-8">
-                    <div class="mb-3">
-                        <label for="Name" class="form-label">Collection Name *</label>
-                        <input name="Name" id="Name" class="form-control" placeholder="Enter collection name" />
-                    </div>
+    .image-input-label {
+        display: block;
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 6px;
+        padding: 15px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        min-height: 70px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+    }
 
-                    <div class="mb-3">
-                        <label for="Summary" class="form-label">Summary (Year)</label>
-                        <input name="Summary" id="Summary" class="form-control" placeholder="e.g., 2025" />
-                    </div>
-                </div>
+    .image-input-label:hover {
+        background: #e9ecef;
+        border-color: #007bff;
+    }
 
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <label for="LanguageID" class="form-label">Language *</label>
-                        <select name="LanguageID" id="LanguageID" class="form-select">
-                            <option value="">Select Language</option>
-                            <option value="1">Turkish</option>
-                            <option value="2">English</option>
-                        </select>
-                    </div>
+    .image-input-label i {
+        font-size: 1.2rem;
+        color: #6c757d;
+        margin-bottom: 4px;
+        pointer-events: none;
+    }
 
-                    <div class="mb-3">
-                        <label for="Image" class="form-label">Collection Image</label>
-                        <input name="Image" id="Image" type="file" class="form-control" accept="image/jpeg" />
-                        <div class="form-text">Only .jpg files are allowed</div>
-                    </div>
+    .image-input-label:hover i {
+        color: #007bff;
+    }
 
-                    <div class="mb-3">
-                        <label for="StartDate" class="form-label">Start Date</label>
-                        <input name="StartDate" id="StartDate" type="datetime-local" class="form-control" />
-                        <div class="form-text">Leave empty for current date/time</div>
-                    </div>
+    .image-input-label span {
+        pointer-events: none;
+    }
+    
+    .file-input {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+        z-index: 1;
+    }
 
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input name="IsActive" id="IsActive" class="form-check-input" type="checkbox" value="true" checked />
-                            <input type="hidden" name="IsActive" value="false" />
-                            <label for="IsActive" class="form-check-label">
-                                Active
-                            </label>
+    .upload-header {
+        background: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        border-radius: 9px 9px 0 0;
+        padding: 12px 15px;
+        margin: -1px -1px 15px -1px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .upload-header h6 {
+        color: #495057;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .file-selected {
+        background: #d4edda !important;
+        border-color: #28a745 !important;
+        color: #155724;
+    }
+
+    .file-selected i {
+        color: #28a745 !important;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center pb-2 mb-4 border-bottom">
+        <h2 class="mb-0">Create Collection</h2>
+        <a href="/Collections/Index" class="btn btn-sm btn-outline-secondary">Back to List</a>
+    </div>
+
+    <form action="/Collections/Create" method="post" enctype="multipart/form-data">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="Name" class="form-label">Collection Name *</label>
+                            <input name="Name" id="Name" class="form-control" placeholder="Enter collection name" required/>
+                        </div>
+                        <div class="mb-3">
+                            <label for="Summary" class="form-label">Summary (Year)</label>
+                            <input name="Summary" id="Summary" class="form-control" placeholder="e.g., 2025" />
+                        </div>
+                         <div class="mb-3">
+                            <label for="StartDate" class="form-label">Start Date</label>
+                            <input name="StartDate" id="StartDate" type="datetime-local" class="form-control" />
+                            <div class="form-text">Leave empty for current date/time</div>
                         </div>
                     </div>
                 </div>
             </div>
+            <div class="col-md-4">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">Properties</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="LanguageID" class="form-label">Language *</label>
+                            <select name="LanguageID" id="LanguageID" class="form-select" required>
+                                <option value="">Select Language</option>
+                                <option value="1">Turkish</option>
+                                <option value="2">English</option>
+                            </select>
+                        </div>
+                        <div class="form-check">
+                            <input name="IsActive" id="IsActive" class="form-check-input" type="checkbox" value="true" checked />
+                            <input type="hidden" name="IsActive" value="false" />
+                            <label for="IsActive" class="form-check-label">Active</label>
+                        </div>
+                    </div>
+                </div>
 
-            <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save me-2"></i>Create Collection
-                </button>
-                <a href="/Collections" class="btn btn-secondary">Cancel</a>
+                <div class="card image-upload-section p-3">
+                     <div class="upload-header">
+                        <h6><i class="fas fa-image me-2"></i>Collection Image</h6>
+                    </div>
+                    <p class="text-muted small mb-2">Only .jpg files are allowed.</p>
+                    
+                    <div class="image-input-group">
+                        <label for="imageUpload" class="image-input-label">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span id="imageUploadText">Click to upload image</span>
+                        </label>
+                        <input type="file" name="Image" id="imageUpload" class="file-input" accept="image/jpeg">
+                    </div>
+                </div>
             </div>
-        </form>
-    </div>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Create Collection</button>
+            <a href="/Collections/Index" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
 </div>
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const imageUpload = document.getElementById('imageUpload');
+    const imageUploadLabel = document.querySelector('label[for="imageUpload"]');
+    const imageUploadText = document.getElementById('imageUploadText');
+
+    imageUpload.addEventListener('change', function() {
+        if (this.files && this.files.length > 0) {
+            imageUploadText.textContent = this.files[0].name;
+            imageUploadLabel.classList.add('file-selected');
+        } else {
+            imageUploadText.textContent = 'Click to upload image';
+            imageUploadLabel.classList.remove('file-selected');
+        }
+    });
+});
+</script>
+}
