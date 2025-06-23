@@ -1,7 +1,7 @@
 using panelOrmo.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
- var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -20,8 +20,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // HTTPS only in production
+        options.Cookie.SameSite = SameSiteMode.Strict;
     });
 
 // Add authorization
@@ -31,7 +31,18 @@ builder.Services.AddAuthorization();
 builder.Services.AddLogging(logging =>
 {
     logging.AddConsole();
-    logging.AddDebug();
+    if (builder.Environment.IsProduction())
+    {
+        logging.AddEventLog(); // Windows Event Log for production
+    }
+});
+
+// Add HSTS and security headers
+builder.Services.AddHsts(options =>
+{
+    options.Preload = true;
+    options.IncludeSubDomains = true;
+    options.MaxAge = TimeSpan.FromDays(365);
 });
 
 var app = builder.Build();
@@ -60,18 +71,21 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Account}/{action=Login}/{id?}");
 
-// Test database connection on startup
-using (var scope = app.Services.CreateScope())
+// Test database connection on startup (optional in production)
+if (app.Environment.IsDevelopment())
 {
-    try
+    using (var scope = app.Services.CreateScope())
     {
-        var dbService = scope.ServiceProvider.GetRequiredService<DatabaseService>();
-        var users = await dbService.GetAllUsers();
-        Console.WriteLine($"Database connection successful. Found {users.Count} users.");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Database connection failed: {ex.Message}");
+        try
+        {
+            var dbService = scope.ServiceProvider.GetRequiredService<DatabaseService>();
+            var users = await dbService.GetAllUsers();
+            Console.WriteLine($"Database connection successful. Found {users.Count} users.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Database connection failed: {ex.Message}");
+        }
     }
 }
 
