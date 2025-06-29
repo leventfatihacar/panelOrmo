@@ -446,7 +446,7 @@ namespace panelOrmo.Services
                 deptCommand.Parameters.AddWithValue("@dname", model.Name);
                 deptCommand.Parameters.AddWithValue("@dsummary", model.Summary ?? "");
                 deptCommand.Parameters.AddWithValue("@dpicture", imagePath ?? "");
-                deptCommand.Parameters.AddWithValue("@dorder", nextDOrder);
+                deptCommand.Parameters.AddWithValue("@dorder", -nextDOrder);
                 deptCommand.Parameters.AddWithValue("@isValid", model.IsActive);
                 deptCommand.Parameters.AddWithValue("@createdDate", createdDate);
                 deptCommand.Parameters.AddWithValue("@userId", userId);
